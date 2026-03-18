@@ -21,6 +21,10 @@ interface UIStore {
   editorInitialTask: Partial<import('../types/task.types').ExtendedTask> | null
   editorIsNew: boolean   // true = creating a new task
 
+  // Settings panel
+  showSettings: boolean
+  toggleSettings: () => void
+
   // Actions
   setActiveView: (view: ActiveView) => void
   selectTask: (taskId: string | null) => void
@@ -45,6 +49,7 @@ export const useUIStore = create<UIStore>((set) => ({
   taskSort: 'due',
   editorInitialTask: null,
   editorIsNew: false,
+  showSettings: false,
 
   setActiveView: (view) => set({ activeView: view }),
 
@@ -70,4 +75,6 @@ export const useUIStore = create<UIStore>((set) => ({
   setTaskSort: (sort) => set({ taskSort: sort }),
 
   setEditorInitialTask: (task, isNew = false) => set({ editorInitialTask: task, editorIsNew: isNew }),
+
+  toggleSettings: () => set((s) => ({ showSettings: !s.showSettings })),
 }))

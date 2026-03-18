@@ -4,6 +4,7 @@ import { useUIStore } from '../../stores/ui-store'
 import { useTasksStore } from '../../stores/tasks-store'
 import { useCalendarStore } from '../../stores/calendar-store'
 import { useSettingsStore } from '../../stores/settings-store'
+import SettingsPanel from '../settings/SettingsPanel'
 
 // Views (placeholders for not-yet-built views)
 import ListView from '../tasks/ListView'
@@ -18,7 +19,7 @@ function PlaceholderView({ name }: { name: string }) {
 }
 
 export default function Layout() {
-  const { activeView, syncError, setSyncError } = useUIStore()
+  const { activeView, syncError, setSyncError, showSettings } = useUIStore()
   const tasksStore = useTasksStore()
   const calendarStore = useCalendarStore()
   const settingsStore = useSettingsStore()
@@ -52,7 +53,7 @@ export default function Layout() {
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
       <SideRail syncError={syncError} isSyncing={isSyncing} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
         {/* Sync error banner */}
         {syncError && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 text-xs text-red-700">
@@ -63,6 +64,13 @@ export default function Layout() {
             >
               Dismiss
             </button>
+          </div>
+        )}
+
+        {/* Settings panel (overlays content area) */}
+        {showSettings && (
+          <div className="absolute inset-0 z-30">
+            <SettingsPanel />
           </div>
         )}
 

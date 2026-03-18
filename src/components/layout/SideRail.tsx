@@ -57,7 +57,7 @@ interface SideRailProps {
 }
 
 export default function SideRail({ syncError, isSyncing }: SideRailProps) {
-  const { activeView, setActiveView } = useUIStore()
+  const { activeView, setActiveView, toggleSettings } = useUIStore()
 
   return (
     <div className="flex flex-col items-center w-9 min-h-screen bg-slate-800 py-2 gap-1 flex-shrink-0">
@@ -89,6 +89,7 @@ export default function SideRail({ syncError, isSyncing }: SideRailProps) {
 
       {/* Settings (bottom) */}
       <button
+        onClick={toggleSettings}
         className="mt-auto w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
         title="Settings"
       >
