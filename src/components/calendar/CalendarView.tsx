@@ -1,12 +1,32 @@
 import { useState, useMemo } from 'react'
-import { addMonths, subMonths, format } from 'date-fns'
+import {
+  addMonths, subMonths, addWeeks, subWeeks, addDays, subDays,
+  format, startOfMonth,
+} from 'date-fns'
 import { useTasksStore } from '../../stores/tasks-store'
 import { useCalendarStore } from '../../stores/calendar-store'
 import MonthGrid from './MonthGrid'
+import WeekView from './WeekView'
+import DayView from './DayView'
 import TaskEditorModal from '../tasks/TaskEditorModal'
 
+type DisplayMode = 'month' | 'week' | 'day'
+
+function formatHeader(date: Date, mode: DisplayMode): string {
+  if (mode === 'month') return format(date, 'MMMM yyyy')
+  if (mode === 'week') return `Week of ${format(date, 'MMM d, yyyy')}`
+  return format(date, 'EEEE, MMMM d, yyyy')
+}
+
+function navigate(date: Date, mode: DisplayMode, dir: -1 | 1): Date {
+  if (mode === 'month') return dir === 1 ? addMonths(date, 1) : subMonths(date, 1)
+  if (mode === 'week') return dir === 1 ? addWeeks(date, 1) : subWeeks(date, 1)
+  return dir === 1 ? addDays(date, 1) : subDays(date, 1)
+}
+
 export default function CalendarView() {
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('month')
   const { tasks } = useTasksStore()
   const { events, calendars, selectedCalendarIds, setSelectedCalendarIds } = useCalendarStore()
   const [showCalendarPicker, setShowCalendarPicker] = useState(false)
@@ -20,7 +40,6 @@ export default function CalendarView() {
     : allEvents.filter(e => selectedCalendarIds.includes(e.calendarId))
 
   function handleCalendarToggle(calendarId: string) {
-    // Interpret [] as all-selected. Toggling off: add others except this one.
     const currentlyEffective = selectedCalendarIds.length === 0
       ? calendars.map(c => c.id)
       : selectedCalendarIds
@@ -29,25 +48,57 @@ export default function CalendarView() {
       ? currentlyEffective.filter(id => id !== calendarId)
       : [...currentlyEffective, calendarId]
 
-    // If all are selected, go back to [] (all)
     const newIds = next.length === calendars.length ? [] : next
     setSelectedCalendarIds(newIds)
   }
 
-  function goToToday() { setCurrentMonth(new Date()) }
+  function goToToday() { setCurrentDate(new Date()) }
+
+  // For month grid, use first day of month
+  const monthDate = displayMode === 'month' ? startOfMonth(currentDate) : currentDate
 
   return (
     <div className="flex flex-col h-full">
       {/* Subheader */}
       <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-slate-200 bg-white flex-shrink-0">
-        <button onClick={() => setCurrentMonth(m => subMonths(m, 1))} className="text-slate-500 hover:text-slate-700 px-1">‹</button>
+        <button
+          onClick={() => setCurrentDate(d => navigate(d, displayMode, -1))}
+          className="text-slate-500 hover:text-slate-700 px-1"
+        >
+          ‹
+        </button>
         <span className="text-sm font-medium text-slate-700 flex-1 text-center">
-          {format(currentMonth, 'MMMM yyyy')}
+          {formatHeader(currentDate, displayMode)}
         </span>
-        <button onClick={() => setCurrentMonth(m => addMonths(m, 1))} className="text-slate-500 hover:text-slate-700 px-1">›</button>
-        <button onClick={goToToday} className="text-xs border border-slate-200 rounded px-2 py-0.5 text-slate-500 hover:bg-slate-50">
+        <button
+          onClick={() => setCurrentDate(d => navigate(d, displayMode, 1))}
+          className="text-slate-500 hover:text-slate-700 px-1"
+        >
+          ›
+        </button>
+        <button
+          onClick={goToToday}
+          className="text-xs border border-slate-200 rounded px-2 py-0.5 text-slate-500 hover:bg-slate-50"
+        >
           Today
         </button>
+
+        {/* Display mode toggle */}
+        <div className="flex border border-slate-200 rounded overflow-hidden">
+          {(['month', 'week', 'day'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => setDisplayMode(mode)}
+              className={`text-xs px-2 py-0.5 transition-colors ${
+                displayMode === mode
+                  ? 'bg-slate-700 text-white'
+                  : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}
+            </button>
+          ))}
+        </div>
 
         {/* Calendar picker */}
         <div className="relative">
@@ -86,10 +137,18 @@ export default function CalendarView() {
         </div>
       </div>
 
-      {/* Month grid */}
-      <MonthGrid month={currentMonth} tasks={allTasks} events={visibleEvents} calendars={calendars} />
+      {/* Active view */}
+      {displayMode === 'month' && (
+        <MonthGrid month={monthDate} tasks={allTasks} events={visibleEvents} calendars={calendars} />
+      )}
+      {displayMode === 'week' && (
+        <WeekView currentDate={currentDate} tasks={allTasks} events={visibleEvents} calendars={calendars} />
+      )}
+      {displayMode === 'day' && (
+        <DayView currentDate={currentDate} tasks={allTasks} events={visibleEvents} calendars={calendars} />
+      )}
 
-      {/* Task editor modal (for clicking task chips) */}
+      {/* Task editor modal */}
       <TaskEditorModal />
     </div>
   )

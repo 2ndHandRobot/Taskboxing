@@ -1,0 +1,114 @@
+import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns'
+import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
+import { useTasksStore } from '../../stores/tasks-store'
+import { useUIStore } from '../../stores/ui-store'
+
+interface Props {
+  currentDate: Date
+  tasks: ExtendedTask[]
+  events: ExtendedCalendarEvent[]
+  calendars: CalendarInfo[]
+}
+
+export default function WeekView({ currentDate, tasks, events, calendars }: Props) {
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+
+  const { completeTask } = useTasksStore()
+  const { openTaskEditor, setEditorInitialTask } = useUIStore()
+
+  function getEventColour(event: ExtendedCalendarEvent): string {
+    const cal = calendars.find(c => c.id === event.calendarId)
+    return cal?.backgroundColor ?? '#6366f1'
+  }
+
+  function handleTaskClick(task: ExtendedTask) {
+    setEditorInitialTask(task)
+    openTaskEditor(task.id)
+  }
+
+  function handleDayClick(day: Date) {
+    const dateStr = format(day, 'yyyy-MM-dd')
+    setEditorInitialTask({ due: new Date(dateStr).toISOString() }, true)
+    openTaskEditor()
+  }
+
+  return (
+    <div className="flex flex-col flex-1 overflow-y-auto">
+      {days.map(day => {
+        const dateStr = format(day, 'yyyy-MM-dd')
+        const dayTasks = tasks.filter(t => t.due?.startsWith(dateStr))
+        const dayEvents = events.filter(e => {
+          const eventDate = e.start.date ?? e.start.dateTime?.slice(0, 10)
+          return eventDate === dateStr
+        })
+        const today = isToday(day)
+
+        return (
+          <div key={dateStr} className="border-b border-slate-100">
+            {/* Day header */}
+            <div
+              onClick={() => handleDayClick(day)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white border-b border-slate-100 cursor-pointer hover:bg-slate-50"
+            >
+              <div className={`text-xs font-semibold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                today ? 'bg-blue-600 text-white' : 'text-slate-500'
+              }`}>
+                {format(day, 'd')}
+              </div>
+              <span className={`text-xs font-medium ${today ? 'text-blue-600' : 'text-slate-500'}`}>
+                {format(day, 'EEEE')}
+              </span>
+              {(dayTasks.length + dayEvents.length) === 0 && (
+                <span className="text-xs text-slate-300 ml-auto">+ add task</span>
+              )}
+            </div>
+
+            {/* Events and tasks */}
+            {(dayTasks.length > 0 || dayEvents.length > 0) && (
+              <div className="px-3 py-1 flex flex-col gap-0.5">
+                {dayEvents.map(event => (
+                  <div
+                    key={event.id}
+                    className="flex items-center gap-1.5 text-xs px-2 py-1 rounded text-white font-medium"
+                    style={{ backgroundColor: getEventColour(event) }}
+                  >
+                    {event.start.dateTime && (
+                      <span className="opacity-80 flex-shrink-0">
+                        {format(new Date(event.start.dateTime), 'HH:mm')}
+                      </span>
+                    )}
+                    <span className="truncate">{event.summary}</span>
+                  </div>
+                ))}
+                {dayTasks.map(task => (
+                  <div key={task.id} className="flex items-center gap-1.5">
+                    <button
+                      onClick={async e => {
+                        e.stopPropagation()
+                        if (task.status === 'needsAction') await completeTask(task.taskListId, task.id)
+                      }}
+                      className="w-3.5 h-3.5 rounded border border-slate-300 flex-shrink-0 flex items-center justify-center hover:border-blue-400"
+                    >
+                      {task.status === 'completed' && (
+                        <svg className="w-2.5 h-2.5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleTaskClick(task)}
+                      className={`flex-1 text-left text-xs truncate ${task.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700 hover:text-slate-900'}`}
+                    >
+                      {task.title}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}

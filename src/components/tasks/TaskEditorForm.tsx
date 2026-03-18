@@ -50,10 +50,16 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
 
   const existingTask = taskId ? tasks[taskId] : null
 
+  // Helper: extract YYYY-MM-DD from a due string (ISO or date-only)
+  function toDueDate(due?: string): string {
+    if (!due) return ''
+    return due.slice(0, 10)
+  }
+
   // Form state
   const [title, setTitle] = useState(existingTask?.title ?? initialData?.title ?? '')
   const [userNotes, setUserNotes] = useState(existingTask?.userNotes ?? '')
-  const [due, setDue] = useState(existingTask?.due?.slice(0, 10) ?? initialData?.due?.slice(0, 10) ?? '')
+  const [due, setDue] = useState(toDueDate(existingTask?.due ?? initialData?.due))
   const [priority, setPriority] = useState<TaskMetadata['priority']>(
     existingTask?.metadata.priority ?? initialData?.metadata?.priority ?? 'none'
   )
@@ -84,14 +90,15 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
     existingTask?.metadata.dependencies ?? []
   )
 
-  const estimatedMinutes = (parseInt(estimatedHours || '0') * 60) + parseInt(estimatedMins || '0')
-  const hasEstimate = estimatedMinutes > 0
-
-  // Target task list for new tasks
-  const targetListId = existingTask?.taskListId
+  // For new tasks: which list to create in (user-selectable)
+  const defaultListId = existingTask?.taskListId
     ?? activeTaskListFilter
     ?? taskLists[0]?.id
     ?? ''
+  const [selectedListId, setSelectedListId] = useState(defaultListId)
+
+  const estimatedMinutes = (parseInt(estimatedHours || '0') * 60) + parseInt(estimatedMins || '0')
+  const hasEstimate = estimatedMinutes > 0
 
   async function handleSave() {
     if (!title.trim()) return
@@ -115,7 +122,7 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
         }
         await updateTask(updated)
       } else {
-        await createTask(targetListId, title.trim(), userNotes, metaPatch, due || undefined)
+        await createTask(selectedListId, title.trim(), userNotes, metaPatch, due || undefined)
       }
       onClose()
     } finally {
@@ -155,6 +162,26 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
           placeholder="Task title"
           className="w-full text-sm font-medium border-0 border-b border-slate-200 pb-1 focus:outline-none focus:border-blue-400 bg-transparent"
         />
+
+        {/* Task list selector — only for new tasks */}
+        {!existingTask && (
+          <div>
+            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">List</label>
+            {taskLists.length === 0 ? (
+              <span className="text-xs text-slate-400 italic">Loading lists…</span>
+            ) : (
+              <select
+                value={selectedListId}
+                onChange={e => setSelectedListId(e.target.value)}
+                className="w-full text-sm border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                {taskLists.map(list => (
+                  <option key={list.id} value={list.id}>{list.title}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
         {/* Notes */}
         <textarea
@@ -331,7 +358,7 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
         </button>
         <button
           onClick={handleSave}
-          disabled={!title.trim() || isSaving}
+          disabled={!title.trim() || isSaving || (!existingTask && !selectedListId)}
           className="text-sm px-4 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? 'Saving...' : 'Save'}

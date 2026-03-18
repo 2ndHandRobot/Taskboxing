@@ -56,11 +56,10 @@ export const useUIStore = create<UIStore>((set) => ({
     set({
       isTaskEditorOpen: true,
       selectedTaskId: taskId ?? null,
-      editorInitialTask: null,
       editorIsNew: !taskId,
     }),
 
-  closeTaskEditor: () => set({ isTaskEditorOpen: false }),
+  closeTaskEditor: () => set({ isTaskEditorOpen: false, editorInitialTask: null, editorIsNew: false }),
 
   setSyncError: (error) => set({ syncError: error }),
 
