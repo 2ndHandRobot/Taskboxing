@@ -200,6 +200,7 @@ export interface AppSettings {
   workHours: WorkHours
   defaultTaskListId?: string
   defaultCalendarId?: string
+  defaultSchedulingCalendarId?: string
   defaultTimeConstraint: TimeConstraint
   defaultEstimateMinutes?: number
   theme: 'light' | 'dark' | 'system'

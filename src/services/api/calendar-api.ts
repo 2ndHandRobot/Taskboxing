@@ -92,6 +92,20 @@ export class CalendarApiService {
     return calendars
   }
 
+  async createCalendar(options: { summary: string; timeZone: string }): Promise<CalendarInfo> {
+    const raw = await apiClient.post<RawCalendar>(`${BASE}/calendars`, options)
+    return {
+      id: raw.id ?? '',
+      summary: raw.summary ?? '',
+      description: raw.description,
+      backgroundColor: raw.backgroundColor,
+      foregroundColor: raw.foregroundColor,
+      accessRole: raw.accessRole ?? 'owner',
+      primary: raw.primary,
+      selected: raw.selected,
+    }
+  }
+
   // ── Events ──────────────────────────────────────────────────────────────────
 
   /**
