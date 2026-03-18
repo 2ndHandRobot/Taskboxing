@@ -164,7 +164,7 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
         />
         <button
           onClick={handleSubmit}
-          disabled={!startTime || isSaving}
+          disabled={!startTime || !calendarId || isSaving}
           className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? '…' : existingEvent ? 'Update' : 'Schedule'}
