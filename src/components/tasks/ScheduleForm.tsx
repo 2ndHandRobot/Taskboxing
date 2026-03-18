@@ -46,7 +46,9 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Auto-compute end time when start changes (new events only, and only once)
+  // Auto-compute end time when startTime is set and endTime is empty (new events only).
+  // Deps intentionally omit existingEvent/endTime/estimatedMinutes to avoid overwriting
+  // user edits — only re-runs when startTime changes.
   useEffect(() => {
     if (!existingEvent && startTime && !endTime) {
       const [h, m] = startTime.split(':').map(Number)
@@ -57,7 +59,8 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
     }
   }, [startTime]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update default calendar when calendars load
+  // Update to default calendar once calendars are loaded.
+  // Intentionally omit settings/calendarId from deps to avoid overwriting the user's selection.
   useEffect(() => {
     if (!calendarId && calendars.length > 0) {
       setCalendarId(
@@ -73,20 +76,28 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
     setIsSaving(true)
     setError(null)
     try {
+      // Auto-populate endTime with startTime + 60min if it's missing
+      const resolvedEnd = endTime || (() => {
+        const [h, m] = startTime.split(':').map(Number)
+        const total = h * 60 + m + 60
+        return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+      })()
+
       const start: CalendarEventTime = {
         dateTime: new Date(`${date}T${startTime}:00`).toISOString(),
       }
       const end: CalendarEventTime = {
-        dateTime: new Date(`${date}T${(endTime || startTime)}:00`).toISOString(),
+        dateTime: new Date(`${date}T${resolvedEnd}:00`).toISOString(),
       }
 
       let savedEvent: ExtendedCalendarEvent
 
       if (existingEvent) {
         if (calendarId !== existingEvent.calendarId) {
-          // Calendar changed: delete old, create new linked event
-          await deleteEvent(existingEvent.calendarId, existingEvent.id)
+          // Calendar changed: create new event first, so original is not lost if creation fails
           savedEvent = await createTaskEvent(calendarId, task.id, task.taskListId, task.title, start, end)
+          // Only delete old event after new one is confirmed created
+          await deleteEvent(existingEvent.calendarId, existingEvent.id)
         } else {
           // Same calendar: patch start/end only
           const patched = await calendarApi.patchEvent(calendarId, existingEvent.id, { start, end })
@@ -122,6 +133,7 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
         <select
           value={calendarId}
           onChange={e => setCalendarId(e.target.value)}
+          aria-label="Calendar"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 max-w-full"
         >
           {calendars.map(cal => (
@@ -132,12 +144,14 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           type="date"
           value={date}
           onChange={e => setDate(e.target.value)}
+          aria-label="Date"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <input
           type="time"
           value={startTime}
           onChange={e => setStartTime(e.target.value)}
+          aria-label="Start time"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <span className="text-xs text-slate-400">→</span>
@@ -145,6 +159,7 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           type="time"
           value={endTime}
           onChange={e => setEndTime(e.target.value)}
+          aria-label="End time"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <button
