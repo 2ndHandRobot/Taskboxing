@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
-import { useTasksStore } from '../../stores/tasks-store'
+import { useCompleteTask } from '../../hooks/useCompleteTask'
 import { useUIStore } from '../../stores/ui-store'
 import EventPopover from './EventPopover'
 
@@ -19,7 +19,7 @@ interface Props {
 export default function DayCell({ day, tasks, events, calendars, isCurrentMonth, isToday }: Props) {
   const [selectedEvent, setSelectedEvent] = useState<ExtendedCalendarEvent | null>(null)
   const [showAll, setShowAll] = useState(false)
-  const { completeTask } = useTasksStore()
+  const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
 
   function getEventColour(event: ExtendedCalendarEvent): string {
@@ -81,7 +81,8 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
                 <button
                   onClick={async e => {
                     e.stopPropagation()
-                    if (task.status === 'needsAction') await completeTask(task.taskListId, task.id)
+                    if (task.status === 'needsAction') await completeTask(task)
+                    else await uncompleteTask(task)
                   }}
                   className="w-3 h-3 rounded-sm border border-slate-300 flex-shrink-0 flex items-center justify-center hover:border-blue-400"
                 >

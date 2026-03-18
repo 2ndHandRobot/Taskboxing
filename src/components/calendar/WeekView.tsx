@@ -1,6 +1,6 @@
 import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
-import { useTasksStore } from '../../stores/tasks-store'
+import { useCompleteTask } from '../../hooks/useCompleteTask'
 import { useUIStore } from '../../stores/ui-store'
 
 interface Props {
@@ -14,7 +14,7 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  const { completeTask } = useTasksStore()
+  const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
 
   function getEventColour(event: ExtendedCalendarEvent): string {
@@ -86,7 +86,8 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
                     <button
                       onClick={async e => {
                         e.stopPropagation()
-                        if (task.status === 'needsAction') await completeTask(task.taskListId, task.id)
+                        if (task.status === 'needsAction') await completeTask(task)
+                        else await uncompleteTask(task)
                       }}
                       className="w-3.5 h-3.5 rounded border border-slate-300 flex-shrink-0 flex items-center justify-center hover:border-blue-400"
                     >

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { format, isPast, isToday } from 'date-fns'
 import type { ExtendedTask } from '../../types/task.types'
 import { useSettingsStore } from '../../stores/settings-store'
-import { useTasksStore } from '../../stores/tasks-store'
+import { useCompleteTask } from '../../hooks/useCompleteTask'
 import TaskItemEditor from './TaskItemEditor'
 
 const PRIORITY_COLOURS: Record<string, string> = {
@@ -20,7 +20,7 @@ interface TaskItemProps {
 export default function TaskItem({ task }: TaskItemProps) {
   const [expanded, setExpanded] = useState(false)
   const { settings } = useSettingsStore()
-  const { completeTask, reopenTask } = useTasksStore()
+  const { completeTask, uncompleteTask } = useCompleteTask()
 
   // Resolve primary tag colour
   const primaryTagId = task.metadata.tags[0]
@@ -35,9 +35,9 @@ export default function TaskItem({ task }: TaskItemProps) {
   async function handleToggleComplete(e: React.MouseEvent) {
     e.stopPropagation()
     if (isCompleted) {
-      await reopenTask(task.taskListId, task.id)
+      await uncompleteTask(task)
     } else {
-      await completeTask(task.taskListId, task.id)
+      await completeTask(task)
     }
   }
 
