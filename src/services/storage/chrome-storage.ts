@@ -11,6 +11,7 @@ const KEYS = {
   selectedTaskListIds: 'selected_task_list_ids',
   selectedCalendarIds: 'selected_calendar_ids',
   lastSyncToken: 'last_sync_token',
+  completedEventIds: 'completed_event_ids',
 } as const
 
 // ─── Chrome Storage Wrapper ───────────────────────────────────────────────────
@@ -124,6 +125,16 @@ class ChromeStorageService {
 
   async clearSyncToken(calendarId: string): Promise<void> {
     await this.remove(`${KEYS.lastSyncToken}:${calendarId}`)
+  }
+
+  // ── Completed Events ─────────────────────────────────────────────────────────
+
+  async getCompletedEventIds(): Promise<string[]> {
+    return (await this.get<string[]>(KEYS.completedEventIds)) ?? []
+  }
+
+  async saveCompletedEventIds(ids: string[]): Promise<void> {
+    await this.set(KEYS.completedEventIds, ids)
   }
 
   // ── Offline Operation Queue ──────────────────────────────────────────────────

@@ -1,21 +1,24 @@
 import { create } from 'zustand'
 import { calendarApi } from '../services/api/calendar-api'
 import { idb } from '../services/storage/indexeddb'
-import type { CalendarInfo, ExtendedCalendarEvent, CalendarEventTime } from '../types/task.types'
+import type { CalendarInfo, ExtendedCalendarEvent, CalendarEventTime, ExtendedTask } from '../types/task.types'
+import { chromeStorage } from '../services/storage/chrome-storage'
 
 interface CalendarStore {
   // State
   calendars: CalendarInfo[]
-  events: Record<string, ExtendedCalendarEvent>   // keyed by event id
+  events: Record<string, ExtendedCalendarEvent>
+  completedEventIds: string[]
   selectedCalendarIds: string[]
-  viewStart: string           // ISO 8601 date — start of current view window
-  viewEnd: string             // ISO 8601 date — end of current view window
+  viewStart: string
+  viewEnd: string
   isLoading: boolean
   error: string | null
 
   // Selectors
   getEventsByCalendar: (calendarId: string) => ExtendedCalendarEvent[]
   getEventsInRange: (start: string, end: string) => ExtendedCalendarEvent[]
+  isEventCompleted: (event: ExtendedCalendarEvent, tasks: Record<string, ExtendedTask>) => boolean
 
   // Actions
   loadFromCache: () => Promise<void>
@@ -26,8 +29,19 @@ interface CalendarStore {
     calendarId: string,
     event: Omit<ExtendedCalendarEvent, 'id' | 'calendarId'>,
   ) => Promise<ExtendedCalendarEvent>
+  createTaskEvent: (
+    calendarId: string,
+    taskId: string,
+    taskListId: string,
+    summary: string,
+    start: CalendarEventTime,
+    end: CalendarEventTime,
+  ) => Promise<ExtendedCalendarEvent>
+  addEvent: (event: ExtendedCalendarEvent) => Promise<void>
   updateEvent: (event: ExtendedCalendarEvent) => Promise<ExtendedCalendarEvent>
   deleteEvent: (calendarId: string, eventId: string) => Promise<void>
+  completeEvent: (eventId: string) => Promise<void>
+  uncompleteEvent: (eventId: string) => Promise<void>
   setViewWindow: (start: string, end: string) => void
   setSelectedCalendarIds: (ids: string[]) => void
   clearError: () => void
@@ -41,6 +55,7 @@ const defaultViewEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOS
 export const useCalendarStore = create<CalendarStore>((set, get) => ({
   calendars: [],
   events: {},
+  completedEventIds: [],
   selectedCalendarIds: [],
   viewStart: defaultViewStart,
   viewEnd: defaultViewEnd,
@@ -61,16 +76,24 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     })
   },
 
+  isEventCompleted: (event, tasks) => {
+    if (event.linkedTaskId) return tasks[event.linkedTaskId]?.status === 'completed'
+    return get().completedEventIds.includes(event.id)
+  },
+
   // ── Actions ──────────────────────────────────────────────────────────────────
 
   loadFromCache: async () => {
     try {
-      const cached = await idb.getAllEvents()
+      const [cached, completedEventIds] = await Promise.all([
+        idb.getAllEvents(),
+        chromeStorage.getCompletedEventIds(),
+      ])
       const eventMap: Record<string, ExtendedCalendarEvent> = {}
       for (const event of cached) {
         eventMap[event.id] = event
       }
-      set({ events: eventMap })
+      set({ events: eventMap, completedEventIds })
     } catch (err) {
       console.error('Failed to load events from cache:', err)
     }
@@ -131,6 +154,18 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     return created
   },
 
+  createTaskEvent: async (calendarId, taskId, taskListId, summary, start, end) => {
+    const created = await calendarApi.createTaskEvent(calendarId, taskId, taskListId, summary, start, end)
+    await idb.saveEvent(created)
+    set((state) => ({ events: { ...state.events, [created.id]: created } }))
+    return created
+  },
+
+  addEvent: async (event) => {
+    await idb.saveEvent(event)
+    set((state) => ({ events: { ...state.events, [event.id]: event } }))
+  },
+
   updateEvent: async (event) => {
     const updated = await calendarApi.updateEvent(event)
     await idb.saveEvent(updated)
@@ -146,6 +181,18 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       delete updated[eventId]
       return { events: updated }
     })
+  },
+
+  completeEvent: async (eventId) => {
+    const ids = [...new Set([...get().completedEventIds, eventId])]
+    set({ completedEventIds: ids })
+    await chromeStorage.saveCompletedEventIds(ids)
+  },
+
+  uncompleteEvent: async (eventId) => {
+    const ids = get().completedEventIds.filter(id => id !== eventId)
+    set({ completedEventIds: ids })
+    await chromeStorage.saveCompletedEventIds(ids)
   },
 
   setViewWindow: (start, end) => set({ viewStart: start, viewEnd: end }),
