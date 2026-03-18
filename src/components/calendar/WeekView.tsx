@@ -2,6 +2,9 @@ import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
 import { useCompleteTask } from '../../hooks/useCompleteTask'
 import { useUIStore } from '../../stores/ui-store'
+import { useCalendarStore } from '../../stores/calendar-store'
+import { useCompleteEvent } from '../../hooks/useCompleteEvent'
+import { useTasksStore } from '../../stores/tasks-store'
 
 interface Props {
   currentDate: Date
@@ -16,6 +19,9 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
 
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
+  const { tasks: tasksRecord } = useTasksStore()
+  const { isEventCompleted } = useCalendarStore()
+  const { completeEvent, uncompleteEvent } = useCompleteEvent()
 
   function getEventColour(event: ExtendedCalendarEvent): string {
     const cal = calendars.find(c => c.id === event.calendarId)
@@ -67,20 +73,43 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
             {/* Events and tasks */}
             {(dayTasks.length > 0 || dayEvents.length > 0) && (
               <div className="px-3 py-1 flex flex-col gap-0.5">
-                {dayEvents.map(event => (
-                  <div
-                    key={event.id}
-                    className="flex items-center gap-1.5 text-xs px-2 py-1 rounded text-white font-medium"
-                    style={{ backgroundColor: getEventColour(event) }}
-                  >
-                    {event.start.dateTime && (
-                      <span className="opacity-80 flex-shrink-0">
-                        {format(new Date(event.start.dateTime), 'HH:mm')}
+                {dayEvents.map(event => {
+                  const isCompleted = isEventCompleted(event, tasksRecord)
+                  return (
+                    <div
+                      key={event.id}
+                      className="group flex items-center gap-1 text-xs px-1 py-1 rounded font-medium"
+                      style={{ backgroundColor: isCompleted ? '#e2e8f0' : getEventColour(event) }}
+                    >
+                      <button
+                        onClick={async e => {
+                          e.stopPropagation()
+                          if (isCompleted) await uncompleteEvent(event)
+                          else await completeEvent(event)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center transition-opacity"
+                        style={{ borderColor: isCompleted ? '#94a3b8' : 'rgba(255,255,255,0.6)' }}
+                      >
+                        {isCompleted && (
+                          <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                      </button>
+                      {event.start.dateTime && (
+                        <span className="opacity-80 flex-shrink-0" style={{ color: isCompleted ? '#94a3b8' : 'white' }}>
+                          {format(new Date(event.start.dateTime), 'HH:mm')}
+                        </span>
+                      )}
+                      <span
+                        className={`truncate ${isCompleted ? 'line-through' : ''}`}
+                        style={{ color: isCompleted ? '#94a3b8' : 'white' }}
+                      >
+                        {event.summary}
                       </span>
-                    )}
-                    <span className="truncate">{event.summary}</span>
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
                 {dayTasks.map(task => (
                   <div key={task.id} className="flex items-center gap-1.5">
                     <button

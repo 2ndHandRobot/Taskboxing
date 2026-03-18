@@ -4,6 +4,9 @@ import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../ty
 import { useCompleteTask } from '../../hooks/useCompleteTask'
 import { useUIStore } from '../../stores/ui-store'
 import EventPopover from './EventPopover'
+import { useCalendarStore } from '../../stores/calendar-store'
+import { useCompleteEvent } from '../../hooks/useCompleteEvent'
+import { useTasksStore } from '../../stores/tasks-store'
 
 const MAX_VISIBLE = 3
 
@@ -21,6 +24,9 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
   const [showAll, setShowAll] = useState(false)
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
+  const { tasks: tasksRecord } = useTasksStore()
+  const { isEventCompleted } = useCalendarStore()
+  const { completeEvent, uncompleteEvent } = useCompleteEvent()
 
   function getEventColour(event: ExtendedCalendarEvent): string {
     const cal = calendars.find(c => c.id === event.calendarId)
@@ -64,15 +70,36 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
         {visible.map(({ type, item }) => {
           if (type === 'event') {
             const event = item as ExtendedCalendarEvent
+            const isCompleted = isEventCompleted(event, tasksRecord)
             return (
-              <button
+              <div
                 key={`e-${event.id}`}
-                onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
-                className="w-full text-left text-xs px-1 py-0.5 rounded truncate text-white font-medium"
-                style={{ backgroundColor: getEventColour(event) }}
+                className="group flex items-center w-full text-xs rounded overflow-hidden"
+                style={{ backgroundColor: isCompleted ? '#e2e8f0' : getEventColour(event) }}
               >
-                {event.summary}
-              </button>
+                <button
+                  onClick={async e => {
+                    e.stopPropagation()
+                    if (isCompleted) await uncompleteEvent(event)
+                    else await completeEvent(event)
+                  }}
+                  className="opacity-0 group-hover:opacity-100 w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center ml-0.5 transition-opacity"
+                  style={{ borderColor: isCompleted ? '#94a3b8' : 'rgba(255,255,255,0.6)' }}
+                >
+                  {isCompleted && (
+                    <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="3">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
+                  className="flex-1 text-left px-1 py-0.5 truncate font-medium"
+                  style={{ color: isCompleted ? '#94a3b8' : 'white' }}
+                >
+                  <span className={isCompleted ? 'line-through' : ''}>{event.summary}</span>
+                </button>
+              </div>
             )
           } else {
             const task = item as ExtendedTask
