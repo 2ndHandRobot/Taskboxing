@@ -8,6 +8,7 @@ import TimeConstraintSelector from './TimeConstraintSelector'
 import SubtaskList from './SubtaskList'
 import type { SubtaskItem } from './SubtaskList'
 import DependencyPicker from './DependencyPicker'
+import ScheduleForm from './ScheduleForm'
 
 // Sub-component: looks up and displays the linked calendar event title + calendar name
 function LinkedEventInfo({ eventId, calendarId }: { eventId: string; calendarId?: string }) {
@@ -47,8 +48,14 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
   const { activeTaskListFilter } = useUIStore()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
 
   const existingTask = taskId ? tasks[taskId] : null
+
+  const { events } = useCalendarStore()
+  const linkedEvent = existingTask?.metadata.calendarEventId
+    ? events[existingTask.metadata.calendarEventId] ?? null
+    : null
 
   // Helper: extract YYYY-MM-DD from a due string (ISO or date-only)
   function toDueDate(due?: string): string {
@@ -147,6 +154,20 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
 
   function toggleTag(tagId: string) {
     setTags(prev => prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId])
+  }
+
+  async function handleUnschedule() {
+    if (!existingTask?.metadata.calendarEventId || !existingTask.metadata.calendarId) return
+    try {
+      const calStore = useCalendarStore.getState()
+      await calStore.deleteEvent(existingTask.metadata.calendarId, existingTask.metadata.calendarEventId)
+      await updateTask({
+        ...existingTask,
+        metadata: { ...existingTask.metadata, calendarEventId: undefined, calendarId: undefined },
+      })
+    } catch (err) {
+      console.error('Failed to unschedule:', err)
+    }
   }
 
   return (
@@ -326,23 +347,47 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
         )}
 
         {/* Linked calendar event */}
-        <div>
-          <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">Calendar</label>
-          {existingTask?.metadata.calendarEventId ? (
-            <LinkedEventInfo
-              eventId={existingTask.metadata.calendarEventId}
-              calendarId={existingTask.metadata.calendarId}
-            />
-          ) : (
-            <button
-              disabled
-              title="Coming soon"
-              className="text-xs text-slate-400 border border-dashed border-slate-300 rounded-md px-3 py-1.5 cursor-not-allowed"
-            >
-              Schedule on calendar
-            </button>
-          )}
-        </div>
+        {existingTask && (
+          <div>
+            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">Calendar</label>
+            {existingTask.metadata.calendarEventId && !showScheduleForm ? (
+              <div className="flex flex-col gap-1.5">
+                <LinkedEventInfo
+                  eventId={existingTask.metadata.calendarEventId}
+                  calendarId={existingTask.metadata.calendarId}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowScheduleForm(true)}
+                    className="text-xs text-blue-500 hover:text-blue-700"
+                  >
+                    Reschedule
+                  </button>
+                  <button
+                    onClick={handleUnschedule}
+                    className="text-xs text-red-400 hover:text-red-600"
+                  >
+                    Unschedule
+                  </button>
+                </div>
+              </div>
+            ) : showScheduleForm ? (
+              <ScheduleForm
+                task={existingTask}
+                existingEvent={linkedEvent}
+                onScheduled={() => setShowScheduleForm(false)}
+                onCancel={() => setShowScheduleForm(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setShowScheduleForm(true)}
+                className="text-xs text-slate-600 border border-dashed border-slate-300 rounded-md px-3 py-1.5 hover:border-blue-400 hover:text-blue-600"
+              >
+                Schedule on calendar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
