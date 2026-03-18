@@ -161,12 +161,17 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
     try {
       const calStore = useCalendarStore.getState()
       await calStore.deleteEvent(existingTask.metadata.calendarId, existingTask.metadata.calendarEventId)
+    } catch (err) {
+      console.error('Failed to delete event from Google Calendar (may already be gone):', err)
+    }
+    // Always clear metadata — even if deleteEvent failed (event may have been externally deleted)
+    try {
       await updateTask({
         ...existingTask,
         metadata: { ...existingTask.metadata, calendarEventId: undefined, calendarId: undefined },
       })
     } catch (err) {
-      console.error('Failed to unschedule:', err)
+      console.error('Failed to clear calendar metadata from task:', err)
     }
   }
 
