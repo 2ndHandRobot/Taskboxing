@@ -25,8 +25,15 @@ export default function SettingsPanel() {
         summary: 'Taskboxing',
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
+      if (!cal.id) throw new Error('Calendar created but returned no ID — please refresh and try again')
       await patch({ defaultSchedulingCalendarId: cal.id })
-      await syncCalendars()
+      try {
+        await syncCalendars()
+      } catch {
+        // Setting was saved — calendar list will refresh on next open
+        setCalendarError('Taskboxing calendar created, but calendar list failed to refresh. Reopen settings to see it.')
+        return
+      }
     } catch (err) {
       setCalendarError(err instanceof Error ? err.message : 'Failed to create calendar')
     } finally {
@@ -35,12 +42,13 @@ export default function SettingsPanel() {
   }
 
   return (
-    <div className="absolute inset-0 z-30 bg-white flex flex-col">
+    <div className="absolute inset-0 bg-white flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 flex-shrink-0">
         <h2 className="text-sm font-semibold text-slate-700">Settings</h2>
         <button
           onClick={toggleSettings}
+          aria-label="Close settings"
           className="text-slate-400 hover:text-slate-600 text-lg leading-none"
         >
           ✕
@@ -60,7 +68,7 @@ export default function SettingsPanel() {
               ) : (
                 <select
                   value={settings.defaultSchedulingCalendarId ?? ''}
-                  onChange={e => patch({ defaultSchedulingCalendarId: e.target.value || undefined })}
+                  onChange={e => patch({ defaultSchedulingCalendarId: e.target.value || undefined }).catch(console.error)}
                   className="w-full text-sm border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
                 >
                   <option value="">— Primary calendar —</option>
