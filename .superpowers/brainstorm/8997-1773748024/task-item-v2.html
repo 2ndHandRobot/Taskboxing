@@ -1,0 +1,79 @@
+<h2>Task Item — Revised Design</h2>
+<p class="subtitle">B layout with a right-side colour accent derived from the task's primary tag. Does this feel right?</p>
+
+<div class="mockup">
+  <div class="mockup-header">List View · My Tasks</div>
+  <div class="mockup-body" style="padding:10px;display:flex;flex-direction:column;gap:5px;background:#f1f5f9">
+
+    <!-- Task 1: "design" tag → blue accent -->
+    <div style="background:white;border:1px solid #e2e8f0;border-right:4px solid #3b82f6;border-radius:6px;padding:8px 10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;color:#94a3b8">☐</span>
+        <span style="font-size:12px;color:#1e293b;flex:1;font-weight:500">Design homepage mockup</span>
+        <span style="background:#fef3c7;color:#92400e;font-size:9px;padding:1px 6px;border-radius:8px">Medium</span>
+      </div>
+      <div style="display:flex;gap:6px;padding-left:21px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:10px;color:#94a3b8">📅 Mar 20</span>
+        <span style="font-size:10px;color:#94a3b8">⏱ 2h est</span>
+        <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:8px">design</span>
+        <span style="background:#f0fdf4;color:#166534;font-size:9px;padding:1px 5px;border-radius:8px">work</span>
+      </div>
+    </div>
+
+    <!-- Task 2: "urgent" tag → red accent -->
+    <div style="background:white;border:1px solid #e2e8f0;border-right:4px solid #ef4444;border-radius:6px;padding:8px 10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;color:#94a3b8">☐</span>
+        <span style="font-size:12px;color:#1e293b;flex:1;font-weight:500">Review pull requests</span>
+        <span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 6px;border-radius:8px">High</span>
+      </div>
+      <div style="display:flex;gap:6px;padding-left:21px;align-items:center">
+        <span style="font-size:10px;color:#ef4444">📅 Mar 18 ⚠ overdue</span>
+        <span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:8px">urgent</span>
+        <span style="font-size:10px;color:#94a3b8">3 subtasks</span>
+      </div>
+    </div>
+
+    <!-- Task 3: "personal" tag → purple accent -->
+    <div style="background:white;border:1px solid #e2e8f0;border-right:4px solid #a855f7;border-radius:6px;padding:8px 10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;color:#94a3b8">☐</span>
+        <span style="font-size:12px;color:#1e293b;flex:1;font-weight:500">Book dentist appointment</span>
+        <span style="background:#f3f4f6;color:#374151;font-size:9px;padding:1px 6px;border-radius:8px">Low</span>
+      </div>
+      <div style="display:flex;gap:6px;padding-left:21px;align-items:center">
+        <span style="font-size:10px;color:#94a3b8">📅 Mar 25</span>
+        <span style="background:#f3e8ff;color:#6b21a8;font-size:9px;padding:1px 5px;border-radius:8px">personal</span>
+      </div>
+    </div>
+
+    <!-- Task 4: no tag → no accent (neutral grey) -->
+    <div style="background:white;border:1px solid #e2e8f0;border-right:4px solid #e2e8f0;border-radius:6px;padding:8px 10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;color:#94a3b8">☐</span>
+        <span style="font-size:12px;color:#1e293b;flex:1;font-weight:500">Write release notes</span>
+        <span style="background:#f3f4f6;color:#374151;font-size:9px;padding:1px 6px;border-radius:8px">Low</span>
+      </div>
+      <div style="display:flex;gap:6px;padding-left:21px;align-items:center">
+        <span style="font-size:10px;color:#94a3b8">📅 Mar 25</span>
+        <span style="font-size:10px;color:#94a3b8">no tags</span>
+      </div>
+    </div>
+
+    <!-- Task 5: completed -->
+    <div style="background:#fafafa;border:1px solid #f1f5f9;border-right:4px solid #e2e8f0;border-radius:6px;padding:8px 10px;opacity:0.65">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;color:#22c55e">✓</span>
+        <span style="font-size:12px;color:#94a3b8;text-decoration:line-through;flex:1">Send weekly report</span>
+      </div>
+    </div>
+
+    <!-- Add task -->
+    <div style="border:1px dashed #cbd5e1;border-radius:6px;padding:7px 10px;text-align:center">
+      <span style="font-size:11px;color:#3b82f6">+ Add task</span>
+    </div>
+
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px">Tag colours would be user-assignable per tag. The primary tag (first in the list) drives the accent. No tag = subtle grey border.</p>

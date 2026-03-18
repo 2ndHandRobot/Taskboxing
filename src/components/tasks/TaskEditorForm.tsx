@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ExtendedTask, TaskMetadata, TimeConstraint, TaskDependency } from '../../types/task.types'
 import { useTasksStore } from '../../stores/tasks-store'
 import { useCalendarStore } from '../../stores/calendar-store'
@@ -97,6 +97,13 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
     ?? ''
   const [selectedListId, setSelectedListId] = useState(defaultListId)
 
+  // If lists weren't loaded when modal opened, update selectedListId once they arrive
+  useEffect(() => {
+    if (!selectedListId && taskLists.length > 0) {
+      setSelectedListId(taskLists[0].id)
+    }
+  }, [taskLists, selectedListId])
+
   const estimatedMinutes = (parseInt(estimatedHours || '0') * 60) + parseInt(estimatedMins || '0')
   const hasEstimate = estimatedMinutes > 0
 
@@ -122,7 +129,9 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
         }
         await updateTask(updated)
       } else {
-        await createTask(selectedListId, title.trim(), userNotes, metaPatch, due || undefined)
+        // Google Tasks API requires RFC 3339 for due date
+        const dueIso = due ? new Date(due).toISOString() : undefined
+        await createTask(selectedListId, title.trim(), userNotes, metaPatch, dueIso)
       }
       onClose()
     } finally {

@@ -83,23 +83,6 @@ export default function CalendarView() {
           Today
         </button>
 
-        {/* Display mode toggle */}
-        <div className="flex border border-slate-200 rounded overflow-hidden">
-          {(['month', 'week', 'day'] as const).map(mode => (
-            <button
-              key={mode}
-              onClick={() => setDisplayMode(mode)}
-              className={`text-xs px-2 py-0.5 transition-colors ${
-                displayMode === mode
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              {mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </button>
-          ))}
-        </div>
-
         {/* Calendar picker */}
         <div className="relative">
           <button
@@ -135,6 +118,23 @@ export default function CalendarView() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Display mode tabs — full-width second row */}
+      <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
+        {(['month', 'week', 'day'] as const).map(mode => (
+          <button
+            key={mode}
+            onClick={() => setDisplayMode(mode)}
+            className={`flex-1 text-xs py-1.5 font-medium transition-colors border-b-2 ${
+              displayMode === mode
+                ? 'border-blue-600 text-blue-600 bg-white'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
       </div>
 
       {/* Active view */}

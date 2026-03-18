@@ -1,0 +1,26 @@
+export interface AuthState {
+  isAuthenticated: boolean
+  accessToken: string | null
+  tokenExpiry: number | null
+  user: GoogleUser | null
+  error: string | null
+}
+
+export interface GoogleUser {
+  id: string
+  email: string
+  name: string
+  picture?: string
+}
+
+export interface AuthTokens {
+  access_token: string
+  expires_in: number
+  token_type: string
+  scope: string
+}
+
+export interface AuthError {
+  error: string
+  error_description?: string
+}

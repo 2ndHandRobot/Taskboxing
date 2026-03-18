@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Task Boxer",
+  "version": "0.1.0",
+  "description": "Smart task scheduling and completion tracking for Google Tasks & Calendar",
+  "permissions": [
+    "identity",
+    "storage",
+    "alarms",
+    "notifications",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://www.googleapis.com/*"
+  ],
+  "oauth2": {
+    "client_id": "140895970772-irh2oh4ufhionjhtlaictgpfftuv3oti.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/tasks",
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
