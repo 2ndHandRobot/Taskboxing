@@ -19,7 +19,7 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
 
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
-  const { tasks: tasksRecord } = useTasksStore()
+  const { tasks: tasksRecord } = useTasksStore() // aliased to avoid collision with tasks prop
   const { isEventCompleted } = useCalendarStore()
   const { completeEvent, uncompleteEvent } = useCompleteEvent()
 
@@ -82,6 +82,7 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
                       style={{ backgroundColor: isCompleted ? '#e2e8f0' : getEventColour(event) }}
                     >
                       <button
+                        aria-label={isCompleted ? 'Mark event incomplete' : 'Mark event complete'}
                         onClick={async e => {
                           e.stopPropagation()
                           if (isCompleted) await uncompleteEvent(event)
