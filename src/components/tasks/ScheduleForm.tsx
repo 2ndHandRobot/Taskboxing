@@ -23,6 +23,10 @@ export interface ScheduleFormHandle {
   submit: (taskOverride?: ExtendedTask) => Promise<void>  // was: submit: () => Promise<void>
 }
 
+function isExtendedTask(task: ExtendedTask | ScheduleTaskInit): task is ExtendedTask {
+  return 'id' in task
+}
+
 const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm(
   { task, existingEvent, onCancel },
   ref,
@@ -91,7 +95,7 @@ const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm
     const taskForApi = taskOverride ?? task
 
     // Guard: ScheduleTaskInit has no 'id'. Bail if called without a real task.
-    if (!('id' in taskForApi)) {
+    if (!isExtendedTask(taskForApi)) {
       setError('Cannot schedule: task must be saved first')
       return
     }

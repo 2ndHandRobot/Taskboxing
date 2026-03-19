@@ -91,6 +91,7 @@ export default function SettingsPanel() {
                   onChange={e => patch({ defaultTaskListId: e.target.value || undefined }).catch(console.error)}
                   className="w-full text-sm border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
                 >
+                  <option value="">— No default —</option>
                   {taskLists.map(list => (
                     <option key={list.id} value={list.id}>{list.title}</option>
                   ))}
