@@ -100,10 +100,13 @@ export class GoogleAuthService {
 
     // Try to load from storage
     const stored = await chrome.storage.local.get(['access_token', 'token_expiry', 'session_type'])
+    // Restore sessionType regardless of token expiry so refreshToken() branches correctly
+    if (stored.session_type) {
+      this.sessionType = stored.session_type as 'chrome' | 'standalone'
+    }
     if (stored.access_token && stored.token_expiry && Date.now() < Number(stored.token_expiry)) {
       this.accessToken = stored.access_token as string
       this.tokenExpiry = Number(stored.token_expiry)
-      this.sessionType = (stored.session_type as 'chrome' | 'standalone') ?? null
       return this.accessToken
     }
 
