@@ -14,7 +14,9 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Listen for messages from other parts of the extension
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Message received in service worker:', request)
+  if (sender.id !== chrome.runtime.id) return false
+
+  console.log('Message received in service worker:', request.type)
 
   // Handle messages here
   if (request.type === 'SYNC_REQUEST') {

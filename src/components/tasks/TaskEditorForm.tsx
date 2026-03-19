@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { ExtendedTask, TaskMetadata, TimeConstraint, TaskDependency } from '../../types/task.types'
 import { useTasksStore } from '../../stores/tasks-store'
 import { useCalendarStore } from '../../stores/calendar-store'
@@ -8,7 +8,7 @@ import TimeConstraintSelector from './TimeConstraintSelector'
 import SubtaskList from './SubtaskList'
 import type { SubtaskItem } from './SubtaskList'
 import DependencyPicker from './DependencyPicker'
-import ScheduleForm from './ScheduleForm'
+import ScheduleForm, { type ScheduleFormHandle } from './ScheduleForm'
 
 // Sub-component: looks up and displays the linked calendar event title + calendar name
 function LinkedEventInfo({ eventId, calendarId }: { eventId: string; calendarId?: string }) {
@@ -49,6 +49,7 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const scheduleFormRef = useRef<ScheduleFormHandle>(null)
 
   const existingTask = taskId ? tasks[taskId] : null
 
@@ -140,7 +141,13 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
         const dueIso = due ? new Date(due).toISOString() : undefined
         await createTask(selectedListId, title.trim(), userNotes, metaPatch, dueIso)
       }
+      // If schedule form is open, submit it as part of save
+      if (showScheduleForm && scheduleFormRef.current) {
+        await scheduleFormRef.current.submit()
+      }
       onClose()
+    } catch {
+      // ScheduleForm displays its own error; task save errors are silent for now
     } finally {
       setIsSaving(false)
     }
@@ -356,9 +363,9 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
               </div>
             ) : showScheduleForm ? (
               <ScheduleForm
+                ref={scheduleFormRef}
                 task={existingTask}
                 existingEvent={linkedEvent}
-                onScheduled={() => setShowScheduleForm(false)}
                 onCancel={() => setShowScheduleForm(false)}
               />
             ) : (

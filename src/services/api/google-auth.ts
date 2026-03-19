@@ -51,7 +51,7 @@ export class GoogleAuthService {
       return token
     } catch (error) {
       console.error('Login error:', error)
-      throw new Error(`Authentication failed: ${error}`)
+      throw new Error('Authentication failed')
     }
   }
 

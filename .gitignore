@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 .worktrees/
+
+# Local env — contains real OAuth client ID
+.env
+manifest.json
+
+# AI tool session data
+.claude/
+.superpowers/

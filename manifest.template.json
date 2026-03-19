@@ -7,14 +7,13 @@
     "identity",
     "storage",
     "alarms",
-    "notifications",
     "sidePanel"
   ],
   "host_permissions": [
     "https://www.googleapis.com/*"
   ],
   "oauth2": {
-    "client_id": "140895970772-irh2oh4ufhionjhtlaictgpfftuv3oti.apps.googleusercontent.com",
+    "client_id": "YOUR_OAUTH_CLIENT_ID_HERE",
     "scopes": [
       "https://www.googleapis.com/auth/tasks",
       "https://www.googleapis.com/auth/calendar",

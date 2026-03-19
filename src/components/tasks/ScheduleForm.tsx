@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { format } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarEventTime } from '../../types/task.types'
 import { useCalendarStore } from '../../stores/calendar-store'
@@ -10,11 +10,17 @@ import DayPreview from './DayPreview'
 interface Props {
   task: ExtendedTask
   existingEvent?: ExtendedCalendarEvent | null  // null/undefined = new schedule
-  onScheduled: () => void
   onCancel: () => void
 }
 
-export default function ScheduleForm({ task, existingEvent, onScheduled, onCancel }: Props) {
+export interface ScheduleFormHandle {
+  submit: () => Promise<void>
+}
+
+const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm(
+  { task, existingEvent, onCancel },
+  ref,
+) {
   const { calendars, createTaskEvent, addEvent, deleteEvent } = useCalendarStore()
   const { settings } = useSettingsStore()
   const { updateTask } = useTasksStore()
@@ -39,6 +45,11 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
     ? format(new Date(existingEvent.end.dateTime), 'HH:mm')
     : ''
 
+  // Duration to preserve when start time is shifted
+  const durationMins = existingEvent?.start.dateTime && existingEvent?.end.dateTime
+    ? (new Date(existingEvent.end.dateTime).getTime() - new Date(existingEvent.start.dateTime).getTime()) / 60000
+    : (task.metadata.estimatedMinutes ?? 60)
+
   const [calendarId, setCalendarId] = useState(initCalId)
   const [date, setDate] = useState(initDate)
   const [startTime, setStartTime] = useState(initStart)
@@ -46,17 +57,16 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Auto-compute end time when startTime is set and endTime is empty (new events only).
-  // Deps intentionally omit existingEvent/endTime/estimatedMinutes to avoid overwriting
-  // user edits — only re-runs when startTime changes.
+  // Skip on mount; whenever start changes, shift end by same duration
+  const isMountRef = useRef(true)
   useEffect(() => {
-    if (!existingEvent && startTime && !endTime) {
-      const [h, m] = startTime.split(':').map(Number)
-      const totalMins = h * 60 + m + (task.metadata.estimatedMinutes ?? 60)
-      const eh = Math.floor(totalMins / 60) % 24
-      const em = totalMins % 60
-      setEndTime(`${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`)
-    }
+    if (isMountRef.current) { isMountRef.current = false; return }
+    if (!startTime) return
+    const [h, m] = startTime.split(':').map(Number)
+    const totalMins = h * 60 + m + durationMins
+    const eh = Math.floor(totalMins / 60) % 24
+    const em = totalMins % 60
+    setEndTime(`${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`)
   }, [startTime]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update to default calendar once calendars are loaded.
@@ -76,10 +86,10 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
     setIsSaving(true)
     setError(null)
     try {
-      // Auto-populate endTime with startTime + 60min if it's missing
+      // Auto-populate endTime with startTime + duration if missing
       const resolvedEnd = endTime || (() => {
         const [h, m] = startTime.split(':').map(Number)
-        const total = h * 60 + m + 60
+        const total = h * 60 + m + durationMins
         return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
       })()
 
@@ -117,18 +127,29 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           calendarId: savedEvent.calendarId,
         },
       })
-
-      onScheduled()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to schedule')
+      const msg = err instanceof Error ? err.message : 'Failed to schedule'
+      setError(msg)
+      throw new Error(msg)
     } finally {
       setIsSaving(false)
     }
   }
 
+  useImperativeHandle(ref, () => ({ submit: handleSubmit }))
+
+  function handleCancel() {
+    setCalendarId(initCalId)
+    setDate(initDate)
+    setStartTime(initStart)
+    setEndTime(initEnd)
+    setError(null)
+    onCancel()
+  }
+
   return (
     <div className="mt-2 flex flex-col gap-2">
-      {/* Row 1: calendar, date, action buttons */}
+      {/* Row 1: calendar, date */}
       <div className="flex flex-wrap gap-1.5 items-center">
         <select
           value={calendarId}
@@ -148,14 +169,7 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           className="text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <button
-          onClick={handleSubmit}
-          disabled={!startTime || !calendarId || isSaving}
-          className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSaving ? '…' : existingEvent ? 'Update' : 'Schedule'}
-        </button>
-        <button
-          onClick={onCancel}
+          onClick={handleCancel}
           className="text-xs px-2 py-1 text-slate-500 hover:text-slate-700"
         >
           Cancel
@@ -178,6 +192,7 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           aria-label="End time"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
+        {isSaving && <span className="text-xs text-slate-400">Saving…</span>}
       </div>
 
       {error && <p className="text-xs text-red-500">{error}</p>}
@@ -188,4 +203,6 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
       )}
     </div>
   )
-}
+})
+
+export default ScheduleForm
