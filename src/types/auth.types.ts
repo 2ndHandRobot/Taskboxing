@@ -4,6 +4,7 @@ export interface AuthState {
   tokenExpiry: number | null
   user: GoogleUser | null
   error: string | null
+  sessionType: 'chrome' | 'standalone' | null
 }
 
 export interface GoogleUser {
