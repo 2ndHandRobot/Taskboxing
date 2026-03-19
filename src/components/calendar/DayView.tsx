@@ -22,7 +22,8 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
     const eventDate = e.start.date ?? e.start.dateTime?.slice(0, 10)
     return eventDate === dateStr
   })
-  const [selectedEvent, setSelectedEvent] = useState<ExtendedCalendarEvent | null>(null)
+  type PopoverState = { event: ExtendedCalendarEvent; rect: DOMRect } | null
+  const [popover, setPopover] = useState<PopoverState>(null)
 
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
@@ -88,7 +89,7 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
                     </span>
                   )}
                   <button
-                    onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
+                    onClick={e => { e.stopPropagation(); setPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
                     className={`truncate text-left flex-1 ${isCompleted ? 'line-through' : ''}`}
                     style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                   >
@@ -143,8 +144,8 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
           </div>
         )}
       </div>
-      {selectedEvent && (
-        <EventPopover event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      {popover && (
+        <EventPopover event={popover.event} anchorRect={popover.rect} onClose={() => setPopover(null)} />
       )}
     </div>
   )

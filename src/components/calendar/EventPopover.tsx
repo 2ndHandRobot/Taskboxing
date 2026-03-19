@@ -1,20 +1,50 @@
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import type { ExtendedCalendarEvent } from '../../types/task.types'
 import { useCalendarStore } from '../../stores/calendar-store'
 import { useTasksStore } from '../../stores/tasks-store'
 import { useCompleteEvent } from '../../hooks/useCompleteEvent'
 
+const POPOVER_WIDTH = 224  // matches w-56
+const MARGIN = 6           // gap between anchor and popover
+
 interface Props {
   event: ExtendedCalendarEvent
+  anchorRect?: DOMRect  // when provided, uses fixed viewport-aware positioning
   onClose: () => void
 }
 
-export default function EventPopover({ event, onClose }: Props) {
+export default function EventPopover({ event, anchorRect, onClose }: Props) {
   const { tasks } = useTasksStore()
   const { isEventCompleted } = useCalendarStore()
   const { completeEvent, uncompleteEvent } = useCompleteEvent()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (!anchorRect || !ref.current) return
+    const popH = ref.current.offsetHeight
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // Horizontal: left-align to event, clamped to viewport
+    let left = anchorRect.left
+    if (left + POPOVER_WIDTH > vw - 8) left = vw - POPOVER_WIDTH - 8
+    if (left < 8) left = 8
+
+    // Vertical: above if there's room, else below
+    let top: number
+    if (anchorRect.top - MARGIN - popH >= 8) {
+      top = anchorRect.top - MARGIN - popH
+    } else {
+      top = anchorRect.bottom + MARGIN
+    }
+    if (top + popH > vh - 8) top = vh - popH - 8
+    if (top < 8) top = 8
+
+    setPos({ top, left })
+  }, [anchorRect])
 
   const completed = isEventCompleted(event, tasks)
   const linkedTask = event.linkedTaskId ? tasks[event.linkedTaskId] : null
@@ -39,9 +69,16 @@ export default function EventPopover({ event, onClose }: Props) {
     }
   }
 
+  const isAnchored = !!anchorRect
+  const anchoredStyle = isAnchored
+    ? (pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' as const, top: 0, left: 0 })
+    : undefined
+
   return (
     <div
-      className="absolute z-20 bg-white border border-slate-200 rounded-lg shadow-xl p-3 w-56 text-sm"
+      ref={ref}
+      className={`${isAnchored ? 'fixed z-50' : 'absolute z-20'} bg-white border border-slate-200 rounded-lg shadow-xl p-3 w-56 text-sm`}
+      style={anchoredStyle}
       onClick={e => e.stopPropagation()}
     >
       <div className="flex justify-between items-start mb-1">

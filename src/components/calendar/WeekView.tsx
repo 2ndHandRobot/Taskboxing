@@ -18,7 +18,8 @@ interface Props {
 export default function WeekView({ currentDate, tasks, events, calendars }: Props) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-  const [selectedEvent, setSelectedEvent] = useState<ExtendedCalendarEvent | null>(null)
+  type PopoverState = { event: ExtendedCalendarEvent; rect: DOMRect } | null
+  const [popover, setPopover] = useState<PopoverState>(null)
 
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
@@ -106,7 +107,7 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
                         </span>
                       )}
                       <button
-                        onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
+                        onClick={e => { e.stopPropagation(); setPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
                         className={`truncate text-left flex-1 ${isCompleted ? 'line-through' : ''}`}
                         style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                       >
@@ -144,8 +145,8 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
           </div>
         )
       })}
-      {selectedEvent && (
-        <EventPopover event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      {popover && (
+        <EventPopover event={popover.event} anchorRect={popover.rect} onClose={() => setPopover(null)} />
       )}
     </div>
   )

@@ -19,8 +19,10 @@ interface Props {
   isToday: boolean
 }
 
+type PopoverState = { event: ExtendedCalendarEvent; rect: DOMRect } | null
+
 export default function DayCell({ day, tasks, events, calendars, isCurrentMonth, isToday }: Props) {
-  const [selectedEvent, setSelectedEvent] = useState<ExtendedCalendarEvent | null>(null)
+  const [popover, setPopover] = useState<PopoverState>(null)
   const [showAll, setShowAll] = useState(false)
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
@@ -94,7 +96,7 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
                   )}
                 </button>
                 <button
-                  onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
+                  onClick={e => { e.stopPropagation(); setPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
                   className="flex-1 text-left px-1 py-0.5 truncate font-medium"
                   style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                 >
@@ -142,8 +144,8 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
       </div>
 
       {/* Event popover */}
-      {selectedEvent && (
-        <EventPopover event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      {popover && (
+        <EventPopover event={popover.event} anchorRect={popover.rect} onClose={() => setPopover(null)} />
       )}
     </div>
   )
