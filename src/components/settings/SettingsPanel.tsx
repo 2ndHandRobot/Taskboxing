@@ -3,10 +3,12 @@ import { useSettingsStore } from '../../stores/settings-store'
 import { useCalendarStore } from '../../stores/calendar-store'
 import { useUIStore } from '../../stores/ui-store'
 import { calendarApi } from '../../services/api/calendar-api'
+import { useTasksStore } from '../../stores/tasks-store'
 
 export default function SettingsPanel() {
   const { settings, patch } = useSettingsStore()
   const { calendars, syncCalendars } = useCalendarStore()
+  const { taskLists } = useTasksStore()
   const { toggleSettings } = useUIStore()
   const [isCreatingCalendar, setIsCreatingCalendar] = useState(false)
   const [calendarError, setCalendarError] = useState<string | null>(null)
@@ -74,6 +76,23 @@ export default function SettingsPanel() {
                   <option value="">— Primary calendar —</option>
                   {calendars.map(cal => (
                     <option key={cal.id} value={cal.id}>{cal.summary}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Default task list for new tasks</label>
+              {taskLists.length === 0 ? (
+                <span className="text-xs text-slate-400 italic">Loading lists…</span>
+              ) : (
+                <select
+                  value={settings.defaultTaskListId ?? ''}
+                  onChange={e => patch({ defaultTaskListId: e.target.value || undefined }).catch(console.error)}
+                  className="w-full text-sm border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                >
+                  {taskLists.map(list => (
+                    <option key={list.id} value={list.id}>{list.title}</option>
                   ))}
                 </select>
               )}
