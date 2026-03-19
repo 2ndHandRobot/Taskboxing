@@ -85,8 +85,13 @@ export class ApiClient {
         if (response.status === 401) {
           // Token may be stale — try refreshing once, then retry
           try {
-            await googleAuth.refreshToken()
-          } catch {
+            const refreshed = await googleAuth.refreshToken()
+            if (refreshed === null) {
+              // Standalone session expired — no refresh available
+              throw new ApiRequestError('Authentication failed', 401, false)
+            }
+          } catch (err) {
+            if (err instanceof ApiRequestError) throw err
             throw new ApiRequestError('Authentication failed', 401, false)
           }
           // Don't count as a retry — just loop immediately
