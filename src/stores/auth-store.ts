@@ -15,6 +15,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isAuthenticated: false,
   accessToken: null,
   tokenExpiry: null,
+  sessionType: null,
   user: null,
   error: null,
 
@@ -23,16 +24,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       set({ error: null })
 
-      // Initiate OAuth login
-      const token = await googleAuth.login(true)
-
-      // Get user info
+      const { token, sessionType } = await googleAuth.login()
       const user = await googleAuth.getUserInfo()
 
       set({
         isAuthenticated: true,
         accessToken: token,
         tokenExpiry: Date.now() + 3600 * 1000,
+        sessionType,
         user,
         error: null,
       })
@@ -41,6 +40,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({
         isAuthenticated: false,
         accessToken: null,
+        sessionType: null,
         user: null,
         error: errorMessage,
       })
@@ -56,6 +56,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         isAuthenticated: false,
         accessToken: null,
         tokenExpiry: null,
+        sessionType: null,
         user: null,
         error: null,
       })
@@ -73,17 +74,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (isAuth) {
         const token = await googleAuth.getAccessToken()
         const user = await googleAuth.getUserInfo()
+        const stored = await chrome.storage.local.get(['session_type'])
+        const sessionType = (stored.session_type as 'chrome' | 'standalone') ?? null
 
         set({
           isAuthenticated: true,
           accessToken: token,
+          sessionType,
           user,
           error: null,
         })
       } else {
+        // Full cleanup — remove cached Chrome token
+        try {
+          await googleAuth.logout()
+        } catch {
+          // Discard — startup cleanup failure must not block the sign-in screen
+        }
         set({
           isAuthenticated: false,
           accessToken: null,
+          sessionType: null,
           user: null,
         })
       }
@@ -92,6 +103,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({
         isAuthenticated: false,
         accessToken: null,
+        sessionType: null,
         user: null,
       })
     }
