@@ -96,7 +96,10 @@ const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm
       return
     }
 
-    if (!startTime) return
+    if (!startTime) {
+      setError('Start time is required to schedule on calendar')
+      throw new Error('Start time is required')
+    }
     setIsSaving(true)
     setError(null)
     try {

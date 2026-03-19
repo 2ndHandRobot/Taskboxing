@@ -99,8 +99,13 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
   )
 
   // For new tasks: which list to create in (user-selectable)
-  const defaultListId = existingTask?.taskListId
-    ?? activeTaskListFilter
+  const validListIds = new Set(taskLists.map(l => l.id))
+  const defaultListId =
+    existingTask?.taskListId
+    ?? (activeTaskListFilter && validListIds.has(activeTaskListFilter)
+        ? activeTaskListFilter : undefined)
+    ?? (settings.defaultTaskListId && validListIds.has(settings.defaultTaskListId)
+        ? settings.defaultTaskListId : undefined)
     ?? taskLists[0]?.id
     ?? ''
   const [selectedListId, setSelectedListId] = useState(defaultListId)
@@ -136,14 +141,17 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
           metadata: { ...existingTask.metadata, ...metaPatch },
         }
         await updateTask(updated)
+        // edit mode: task prop is the real ExtendedTask, no override needed
+        if (showScheduleForm && scheduleFormRef.current) {
+          await scheduleFormRef.current.submit()
+        }
       } else {
-        // Google Tasks API requires RFC 3339 for due date
         const dueIso = due ? new Date(due).toISOString() : undefined
-        await createTask(selectedListId, title.trim(), userNotes, metaPatch, dueIso)
-      }
-      // If schedule form is open, submit it as part of save
-      if (showScheduleForm && scheduleFormRef.current) {
-        await scheduleFormRef.current.submit()
+        const newTask = await createTask(selectedListId, title.trim(), userNotes, metaPatch, dueIso)
+        // new task: pass real ExtendedTask so ScheduleForm has valid id/taskListId
+        if (showScheduleForm && scheduleFormRef.current) {
+          await scheduleFormRef.current.submit(newTask)
+        }
       }
       onClose()
     } catch {
@@ -336,11 +344,11 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
           </div>
         )}
 
-        {/* Linked calendar event */}
-        {existingTask && (
-          <div>
-            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">Calendar</label>
-            {existingTask.metadata.calendarEventId && !showScheduleForm ? (
+        {/* Calendar */}
+        <div>
+          <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">Calendar</label>
+          {existingTask ? (
+            existingTask.metadata.calendarEventId && !showScheduleForm ? (
               <div className="flex flex-col gap-1.5">
                 <LinkedEventInfo
                   eventId={existingTask.metadata.calendarEventId}
@@ -375,9 +383,29 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
               >
                 Schedule on calendar
               </button>
-            )}
-          </div>
-        )}
+            )
+          ) : (
+            showScheduleForm ? (
+              <ScheduleForm
+                ref={scheduleFormRef}
+                task={{
+                  title: title.trim() || 'New Task',
+                  due: due || undefined,
+                  metadata: { estimatedMinutes: hasEstimate ? estimatedMinutes : undefined },
+                }}
+                existingEvent={undefined}
+                onCancel={() => setShowScheduleForm(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setShowScheduleForm(true)}
+                className="text-xs text-slate-600 border border-dashed border-slate-300 rounded-md px-3 py-1.5 hover:border-blue-400 hover:text-blue-600"
+              >
+                Schedule on calendar
+              </button>
+            )
+          )}
+        </div>
 
         {/* Subtasks */}
         {existingTask && (
