@@ -1,4 +1,4 @@
-import type { AuthTokens, GoogleUser } from '../../types/auth.types'
+import type { GoogleUser } from '../../types/auth.types'
 
 const GOOGLE_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/tasks',
@@ -15,6 +15,7 @@ export class GoogleAuthService {
   private static instance: GoogleAuthService
   private accessToken: string | null = null
   private tokenExpiry: number | null = null
+  private sessionType: 'chrome' | 'standalone' | null = null
 
   private constructor() {}
 
@@ -27,28 +28,39 @@ export class GoogleAuthService {
 
   /**
    * Initiate OAuth login flow
-   * @param interactive Whether to show login UI if needed
-   * @returns Access token
+   * Attempts silent auth first (Chrome-signed-in); falls back to interactive.
+   * @returns Token and session type
    */
-  async login(interactive = true): Promise<string> {
+  async login(): Promise<{ token: string; sessionType: 'chrome' | 'standalone' }> {
     try {
-      const token = await this.getAuthToken(interactive)
+      // Phase 1: silent — succeeds if user is signed into Chrome
+      let token: string | null = null
+      let sessionType: 'chrome' | 'standalone'
+
+      try {
+        token = await this.getAuthToken(false)
+        sessionType = 'chrome'
+      } catch {
+        // Phase 2: interactive fallback
+        token = await this.getAuthToken(true)
+        sessionType = 'standalone'
+      }
 
       if (!token) {
         throw new Error('Failed to obtain access token')
       }
 
-      // Store token and expiry
       this.accessToken = token
-      this.tokenExpiry = Date.now() + 3600 * 1000 // 1 hour from now
+      this.tokenExpiry = Date.now() + 3600 * 1000
+      this.sessionType = sessionType
 
-      // Save to Chrome storage
       await chrome.storage.local.set({
         access_token: this.accessToken,
         token_expiry: this.tokenExpiry,
+        session_type: this.sessionType,
       })
 
-      return token
+      return { token, sessionType }
     } catch (error) {
       console.error('Login error:', error)
       throw new Error('Authentication failed')
@@ -64,7 +76,7 @@ export class GoogleAuthService {
     }
 
     try {
-      const result = await chrome.identity.getAuthToken({ interactive })
+      const result = await chrome.identity.getAuthToken({ interactive, scopes: GOOGLE_OAUTH_SCOPES })
 
       if (!result || !result.token) {
         throw new Error('No token received')
@@ -87,7 +99,11 @@ export class GoogleAuthService {
     }
 
     // Try to load from storage
-    const stored = await chrome.storage.local.get(['access_token', 'token_expiry'])
+    const stored = await chrome.storage.local.get(['access_token', 'token_expiry', 'session_type'])
+    // Restore sessionType regardless of token expiry so refreshToken() branches correctly
+    if (stored.session_type) {
+      this.sessionType = stored.session_type as 'chrome' | 'standalone'
+    }
     if (stored.access_token && stored.token_expiry && Date.now() < Number(stored.token_expiry)) {
       this.accessToken = stored.access_token as string
       this.tokenExpiry = Number(stored.token_expiry)
@@ -104,11 +120,16 @@ export class GoogleAuthService {
   }
 
   /**
-   * Refresh the access token (silent, non-interactive)
+   * Refresh the access token (silent, non-interactive).
+   * Returns null immediately for standalone sessions.
    */
-  async refreshToken(): Promise<string> {
+  async refreshToken(): Promise<string | null> {
+    // Standalone sessions do not refresh — force re-authentication
+    if (this.sessionType === 'standalone') {
+      return null
+    }
+
     try {
-      // Attempt silent refresh (interactive: false)
       const token = await this.getAuthToken(false)
 
       this.accessToken = token
@@ -117,15 +138,16 @@ export class GoogleAuthService {
       await chrome.storage.local.set({
         access_token: this.accessToken,
         token_expiry: this.tokenExpiry,
+        session_type: this.sessionType,
       })
 
       return token
     } catch (error) {
       console.error('Silent refresh failed:', error)
-      // Clear stored tokens
       this.accessToken = null
       this.tokenExpiry = null
-      await chrome.storage.local.remove(['access_token', 'token_expiry'])
+      this.sessionType = null
+      await chrome.storage.local.remove(['access_token', 'token_expiry', 'session_type'])
       throw error
     }
   }
@@ -178,9 +200,10 @@ export class GoogleAuthService {
       // Clear local state
       this.accessToken = null
       this.tokenExpiry = null
+      this.sessionType = null
 
       // Clear Chrome storage
-      await chrome.storage.local.remove(['access_token', 'token_expiry'])
+      await chrome.storage.local.remove(['access_token', 'token_expiry', 'session_type'])
     } catch (error) {
       console.error('Logout error:', error)
       throw error
@@ -193,6 +216,13 @@ export class GoogleAuthService {
   async isAuthenticated(): Promise<boolean> {
     const token = await this.getAccessToken()
     return token !== null
+  }
+
+  /**
+   * Get the current session type (restored from storage by getAccessToken)
+   */
+  getSessionType(): 'chrome' | 'standalone' | null {
+    return this.sessionType
   }
 }
 

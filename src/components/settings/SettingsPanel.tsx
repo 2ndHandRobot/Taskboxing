@@ -2,14 +2,27 @@ import { useState } from 'react'
 import { useSettingsStore } from '../../stores/settings-store'
 import { useCalendarStore } from '../../stores/calendar-store'
 import { useUIStore } from '../../stores/ui-store'
+import { useAuthStore } from '../../stores/auth-store'
 import { calendarApi } from '../../services/api/calendar-api'
 import { useTasksStore } from '../../stores/tasks-store'
+
+function getInitials(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return '?'
+  const parts = trimmed.split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 export default function SettingsPanel() {
   const { settings, patch } = useSettingsStore()
   const { calendars, syncCalendars } = useCalendarStore()
   const { taskLists } = useTasksStore()
   const { toggleSettings } = useUIStore()
+  const { user, logout } = useAuthStore()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState(false)
   const [isCreatingCalendar, setIsCreatingCalendar] = useState(false)
   const [calendarError, setCalendarError] = useState<string | null>(null)
 
@@ -18,6 +31,19 @@ export default function SettingsPanel() {
     settings.defaultSchedulingCalendarId &&
     calendars.some(c => c.id === settings.defaultSchedulingCalendarId)
   )
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    setSignOutError(null)
+    try {
+      await logout()
+      toggleSettings()
+    } catch (err) {
+      setSignOutError(err instanceof Error ? err.message : 'Sign out failed')
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
 
   async function handleCreateTaskboxing() {
     setIsCreatingCalendar(true)
@@ -58,6 +84,45 @@ export default function SettingsPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-6">
+        {/* Account */}
+        <section className="flex flex-col gap-2">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Account</h3>
+          <div className="flex items-center gap-3">
+            {/* Avatar — img shown only when picture URL is present and hasn't errored */}
+            {user?.picture && !avatarError ? (
+              <img
+                src={user.picture}
+                alt={user.name}
+                className="w-8 h-8 rounded-full flex-shrink-0"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600 flex-shrink-0">
+                {user ? getInitials(user.name) : '?'}
+              </div>
+            )}
+
+            {/* Name / email */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-700 truncate">{user?.name}</p>
+              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+            </div>
+
+            {/* Sign out */}
+            <button
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50 flex-shrink-0"
+            >
+              {isSigningOut ? 'Signing out…' : 'Sign out'}
+            </button>
+          </div>
+
+          {signOutError && (
+            <p className="text-xs text-red-600">{signOutError}</p>
+          )}
+        </section>
+
         {/* Scheduling */}
         <div>
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Scheduling</h3>
