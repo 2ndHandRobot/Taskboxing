@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { format, isToday } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
 import { useCompleteTask } from '../../hooks/useCompleteTask'
@@ -5,6 +6,7 @@ import { useUIStore } from '../../stores/ui-store'
 import { useCalendarStore } from '../../stores/calendar-store'
 import { useCompleteEvent } from '../../hooks/useCompleteEvent'
 import { useTasksStore } from '../../stores/tasks-store'
+import EventPopover from './EventPopover'
 
 interface Props {
   currentDate: Date
@@ -20,6 +22,7 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
     const eventDate = e.start.date ?? e.start.dateTime?.slice(0, 10)
     return eventDate === dateStr
   })
+  const [selectedEvent, setSelectedEvent] = useState<ExtendedCalendarEvent | null>(null)
 
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
@@ -45,7 +48,7 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
   const today = isToday(currentDate)
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto px-4 py-3 gap-3">
+    <div className="relative flex flex-col flex-1 overflow-y-auto px-4 py-3 gap-3">
       {/* Events */}
       {dayEvents.length > 0 && (
         <div>
@@ -84,12 +87,13 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
                       {event.end.dateTime && ` – ${format(new Date(event.end.dateTime), 'HH:mm')}`}
                     </span>
                   )}
-                  <span
-                    className={`truncate ${isCompleted ? 'line-through' : ''}`}
+                  <button
+                    onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
+                    className={`truncate text-left flex-1 ${isCompleted ? 'line-through' : ''}`}
                     style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                   >
                     {event.summary}
-                  </span>
+                  </button>
                 </div>
               )
             })}
@@ -139,6 +143,9 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
           </div>
         )}
       </div>
+      {selectedEvent && (
+        <EventPopover event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </div>
   )
 }

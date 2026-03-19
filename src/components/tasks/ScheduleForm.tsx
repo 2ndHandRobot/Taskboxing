@@ -128,7 +128,7 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
 
   return (
     <div className="mt-2 flex flex-col gap-2">
-      {/* Form row */}
+      {/* Row 1: calendar, date, action buttons */}
       <div className="flex flex-wrap gap-1.5 items-center">
         <select
           value={calendarId}
@@ -147,6 +147,22 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           aria-label="Date"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
+        <button
+          onClick={handleSubmit}
+          disabled={!startTime || !calendarId || isSaving}
+          className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? '…' : existingEvent ? 'Update' : 'Schedule'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-xs px-2 py-1 text-slate-500 hover:text-slate-700"
+        >
+          Cancel
+        </button>
+      </div>
+      {/* Row 2: time range */}
+      <div className="flex gap-1.5 items-center">
         <input
           type="time"
           value={startTime}
@@ -162,19 +178,6 @@ export default function ScheduleForm({ task, existingEvent, onScheduled, onCance
           aria-label="End time"
           className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
-        <button
-          onClick={handleSubmit}
-          disabled={!startTime || !calendarId || isSaving}
-          className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSaving ? '…' : existingEvent ? 'Update' : 'Schedule'}
-        </button>
-        <button
-          onClick={onCancel}
-          className="text-xs px-2 py-1 text-slate-500 hover:text-slate-700"
-        >
-          Cancel
-        </button>
       </div>
 
       {error && <p className="text-xs text-red-500">{error}</p>}

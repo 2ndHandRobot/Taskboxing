@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
 import { useCompleteTask } from '../../hooks/useCompleteTask'
@@ -5,6 +6,7 @@ import { useUIStore } from '../../stores/ui-store'
 import { useCalendarStore } from '../../stores/calendar-store'
 import { useCompleteEvent } from '../../hooks/useCompleteEvent'
 import { useTasksStore } from '../../stores/tasks-store'
+import EventPopover from './EventPopover'
 
 interface Props {
   currentDate: Date
@@ -16,6 +18,7 @@ interface Props {
 export default function WeekView({ currentDate, tasks, events, calendars }: Props) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const [selectedEvent, setSelectedEvent] = useState<ExtendedCalendarEvent | null>(null)
 
   const { completeTask, uncompleteTask } = useCompleteTask()
   const { openTaskEditor, setEditorInitialTask } = useUIStore()
@@ -40,7 +43,7 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto">
+    <div className="relative flex flex-col flex-1 overflow-y-auto">
       {days.map(day => {
         const dateStr = format(day, 'yyyy-MM-dd')
         const dayTasks = tasks.filter(t => t.due?.startsWith(dateStr))
@@ -102,12 +105,13 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
                           {format(new Date(event.start.dateTime), 'HH:mm')}
                         </span>
                       )}
-                      <span
-                        className={`truncate ${isCompleted ? 'line-through' : ''}`}
+                      <button
+                        onClick={e => { e.stopPropagation(); setSelectedEvent(event) }}
+                        className={`truncate text-left flex-1 ${isCompleted ? 'line-through' : ''}`}
                         style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                       >
                         {event.summary}
-                      </span>
+                      </button>
                     </div>
                   )
                 })}
@@ -140,6 +144,9 @@ export default function WeekView({ currentDate, tasks, events, calendars }: Prop
           </div>
         )
       })}
+      {selectedEvent && (
+        <EventPopover event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </div>
   )
 }

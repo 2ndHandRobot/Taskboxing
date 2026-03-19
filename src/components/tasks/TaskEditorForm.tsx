@@ -329,28 +329,6 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
           </div>
         )}
 
-        {/* Subtasks */}
-        {existingTask && (
-          <div>
-            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">
-              Subtasks ({subtasks.length})
-            </label>
-            <SubtaskList items={subtasks} onChange={setSubtasks} />
-          </div>
-        )}
-
-        {/* Dependencies */}
-        {existingTask && (
-          <div>
-            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">Blocked by</label>
-            <DependencyPicker
-              currentTaskId={existingTask.id}
-              dependencies={dependencies}
-              onChange={setDependencies}
-            />
-          </div>
-        )}
-
         {/* Linked calendar event */}
         {existingTask && (
           <div>
@@ -391,6 +369,28 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
                 Schedule on calendar
               </button>
             )}
+          </div>
+        )}
+
+        {/* Subtasks */}
+        {existingTask && (
+          <div>
+            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">
+              Subtasks ({subtasks.length})
+            </label>
+            <SubtaskList items={subtasks} onChange={setSubtasks} />
+          </div>
+        )}
+
+        {/* Dependencies */}
+        {existingTask && (
+          <div>
+            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">Blocked by</label>
+            <DependencyPicker
+              currentTaskId={existingTask.id}
+              dependencies={dependencies}
+              onChange={setDependencies}
+            />
           </div>
         )}
       </div>
