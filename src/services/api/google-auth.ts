@@ -138,6 +138,7 @@ export class GoogleAuthService {
       await chrome.storage.local.set({
         access_token: this.accessToken,
         token_expiry: this.tokenExpiry,
+        session_type: this.sessionType,
       })
 
       return token
@@ -215,6 +216,13 @@ export class GoogleAuthService {
   async isAuthenticated(): Promise<boolean> {
     const token = await this.getAccessToken()
     return token !== null
+  }
+
+  /**
+   * Get the current session type (restored from storage by getAccessToken)
+   */
+  getSessionType(): 'chrome' | 'standalone' | null {
+    return this.sessionType
   }
 }
 

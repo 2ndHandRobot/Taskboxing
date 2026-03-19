@@ -14,13 +14,6 @@ export interface GoogleUser {
   picture?: string
 }
 
-export interface AuthTokens {
-  access_token: string
-  expires_in: number
-  token_type: string
-  scope: string
-}
-
 export interface AuthError {
   error: string
   error_description?: string

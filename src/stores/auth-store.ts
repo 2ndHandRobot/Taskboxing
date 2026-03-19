@@ -74,8 +74,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (isAuth) {
         const token = await googleAuth.getAccessToken()
         const user = await googleAuth.getUserInfo()
-        const stored = await chrome.storage.local.get(['session_type'])
-        const sessionType = (stored.session_type as 'chrome' | 'standalone') ?? null
+        const sessionType = googleAuth.getSessionType()
 
         set({
           isAuthenticated: true,

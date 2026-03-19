@@ -6,6 +6,14 @@ import { useAuthStore } from '../../stores/auth-store'
 import { calendarApi } from '../../services/api/calendar-api'
 import { useTasksStore } from '../../stores/tasks-store'
 
+function getInitials(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return '?'
+  const parts = trimmed.split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 export default function SettingsPanel() {
   const { settings, patch } = useSettingsStore()
   const { calendars, syncCalendars } = useCalendarStore()
@@ -35,14 +43,6 @@ export default function SettingsPanel() {
     } finally {
       setIsSigningOut(false)
     }
-  }
-
-  function getInitials(name: string): string {
-    const trimmed = name.trim()
-    if (!trimmed) return '?'
-    const parts = trimmed.split(/\s+/)
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   }
 
   async function handleCreateTaskboxing() {
