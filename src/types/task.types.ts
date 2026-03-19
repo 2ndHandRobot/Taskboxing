@@ -147,7 +147,7 @@ export interface ExtendedCalendarEvent {
   organizer?: { email: string; displayName?: string }
   attendees?: Array<{ email: string; displayName?: string; responseStatus: string }>
 
-  // Linked task (if this event was created by Task Boxer)
+  // Linked task (if this event was created by Taskboxing)
   linkedTaskId?: string
   linkedTaskListId?: string
 }

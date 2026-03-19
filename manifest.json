@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Task Boxer",
+  "name": "Taskboxing",
   "version": "0.1.0",
   "description": "Smart task scheduling and completion tracking for Google Tasks & Calendar",
   "permissions": [

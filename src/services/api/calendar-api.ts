@@ -197,7 +197,7 @@ export class CalendarApiService {
   }
 
   /**
-   * Create a calendar event linked to a Task Boxer task.
+   * Create a calendar event linked to a Taskboxing task.
    * Stores the task link in the event description.
    */
   async createTaskEvent(
@@ -209,7 +209,7 @@ export class CalendarApiService {
     end: CalendarEventTime,
     description?: string,
   ): Promise<ExtendedCalendarEvent> {
-    const linkedMarker = `[task-boxer:${taskListId}/${taskId}]`
+    const linkedMarker = `[taskboxing:${taskListId}/${taskId}]`
     const fullDescription = description
       ? `${description}\n\n${linkedMarker}`
       : linkedMarker
@@ -227,10 +227,10 @@ export class CalendarApiService {
   }
 
   /**
-   * Quick-check whether an event was created by Task Boxer.
+   * Quick-check whether an event was created by Taskboxing.
    */
-  isTaskBoxerEvent(event: ExtendedCalendarEvent): boolean {
-    return !!event.linkedTaskId || (event.description?.includes('[task-boxer:') ?? false)
+  isTaskboxingEvent(event: ExtendedCalendarEvent): boolean {
+    return !!event.linkedTaskId || (event.description?.includes('[taskboxing:') ?? false)
   }
 }
 
@@ -241,7 +241,7 @@ function toExtendedEvent(raw: RawEvent, calendarId: string): ExtendedCalendarEve
   let linkedTaskId: string | undefined
   let linkedTaskListId: string | undefined
 
-  const match = raw.description?.match(/\[task-boxer:([^/]+)\/([^\]]+)\]/)
+  const match = raw.description?.match(/\[taskboxing:([^/]+)\/([^\]]+)\]/)
   if (match) {
     linkedTaskListId = match[1]
     linkedTaskId = match[2]

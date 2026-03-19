@@ -1,13 +1,13 @@
-// Service Worker for Task Boxer Chrome Extension
+// Service Worker for Taskboxing Chrome Extension
 
-console.log('Task Boxer service worker loaded')
+console.log('Taskboxing service worker loaded')
 
 // Open side panel when the toolbar icon is clicked (instead of popup)
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('Task Boxer installed:', details.reason)
+  console.log('Taskboxing installed:', details.reason)
   // Ensure side-panel-on-click is set after updates too
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 })

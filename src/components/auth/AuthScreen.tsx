@@ -63,7 +63,7 @@ export default function AuthScreen() {
     <div className="flex flex-col items-center gap-6 p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Welcome to Task Boxer
+          Welcome to Taskboxing
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
           Sign in with your Google account to get started

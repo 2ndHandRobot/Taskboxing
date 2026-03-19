@@ -92,7 +92,7 @@ export default function EventPopover({ event, anchorRect, onClose }: Props) {
       </div>
       {event.description && (
         <p className="text-xs text-slate-600 mb-2 line-clamp-3">
-          {event.description.replace(/\[task-boxer:[^\]]+\]/, '').trim()}
+          {event.description.replace(/\[taskboxing:[^\]]+\]/, '').trim()}
         </p>
       )}
       {linkedTask && (

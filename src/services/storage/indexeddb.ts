@@ -2,7 +2,7 @@ import type { ExtendedTask, ExtendedCalendarEvent } from '../../types/task.types
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const DB_NAME = 'task-boxer'
+const DB_NAME = 'taskboxing'
 const DB_VERSION = 1
 
 const STORES = {
