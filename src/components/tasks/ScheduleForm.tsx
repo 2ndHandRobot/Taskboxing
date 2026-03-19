@@ -7,14 +7,20 @@ import { useTasksStore } from '../../stores/tasks-store'
 import { calendarApi } from '../../services/api/calendar-api'
 import DayPreview from './DayPreview'
 
+export interface ScheduleTaskInit {
+  title: string
+  due?: string
+  metadata: { estimatedMinutes?: number }
+}
+
 interface Props {
-  task: ExtendedTask
+  task: ExtendedTask | ScheduleTaskInit   // was: task: ExtendedTask
   existingEvent?: ExtendedCalendarEvent | null  // null/undefined = new schedule
   onCancel: () => void
 }
 
 export interface ScheduleFormHandle {
-  submit: () => Promise<void>
+  submit: (taskOverride?: ExtendedTask) => Promise<void>  // was: submit: () => Promise<void>
 }
 
 const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm(
@@ -81,7 +87,15 @@ const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm
     }
   }, [calendars]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleSubmit() {
+  async function handleSubmit(taskOverride?: ExtendedTask) {
+    const taskForApi = taskOverride ?? task
+
+    // Guard: ScheduleTaskInit has no 'id'. Bail if called without a real task.
+    if (!('id' in taskForApi)) {
+      setError('Cannot schedule: task must be saved first')
+      return
+    }
+
     if (!startTime) return
     setIsSaving(true)
     setError(null)
@@ -105,7 +119,7 @@ const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm
       if (existingEvent) {
         if (calendarId !== existingEvent.calendarId) {
           // Calendar changed: create new event first, so original is not lost if creation fails
-          savedEvent = await createTaskEvent(calendarId, task.id, task.taskListId, task.title, start, end)
+          savedEvent = await createTaskEvent(calendarId, taskForApi.id, taskForApi.taskListId, taskForApi.title, start, end)
           // Only delete old event after new one is confirmed created
           await deleteEvent(existingEvent.calendarId, existingEvent.id)
         } else {
@@ -115,14 +129,14 @@ const ScheduleForm = forwardRef<ScheduleFormHandle, Props>(function ScheduleForm
           savedEvent = patched
         }
       } else {
-        savedEvent = await createTaskEvent(calendarId, task.id, task.taskListId, task.title, start, end)
+        savedEvent = await createTaskEvent(calendarId, taskForApi.id, taskForApi.taskListId, taskForApi.title, start, end)
       }
 
       // Save calendarEventId + calendarId into task metadata
       await updateTask({
-        ...task,
+        ...taskForApi,
         metadata: {
-          ...task.metadata,
+          ...taskForApi.metadata,
           calendarEventId: savedEvent.id,
           calendarId: savedEvent.calendarId,
         },
