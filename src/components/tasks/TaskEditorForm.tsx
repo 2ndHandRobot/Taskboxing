@@ -8,7 +8,7 @@ import TimeConstraintSelector from './TimeConstraintSelector'
 import SubtaskList from './SubtaskList'
 import type { SubtaskItem } from './SubtaskList'
 import DependencyPicker from './DependencyPicker'
-import ScheduleForm, { type ScheduleFormHandle } from './ScheduleForm'
+import ScheduleForm, { type ScheduleFormHandle, type ScheduleTaskInit } from './ScheduleForm'
 
 // Sub-component: looks up and displays the linked calendar event title + calendar name
 function LinkedEventInfo({ eventId, calendarId }: { eventId: string; calendarId?: string }) {
