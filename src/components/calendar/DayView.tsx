@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { format, isToday } from 'date-fns'
 import type { ExtendedTask, ExtendedCalendarEvent, CalendarInfo } from '../../types/task.types'
 import { useCompleteTask } from '../../hooks/useCompleteTask'
@@ -22,11 +21,8 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
     const eventDate = e.start.date ?? e.start.dateTime?.slice(0, 10)
     return eventDate === dateStr
   })
-  type PopoverState = { event: ExtendedCalendarEvent; rect: DOMRect } | null
-  const [popover, setPopover] = useState<PopoverState>(null)
-
   const { completeTask, uncompleteTask } = useCompleteTask()
-  const { openTaskEditor, setEditorInitialTask } = useUIStore()
+  const { openTaskEditor, setEditorInitialTask, calendarEventPopover, setCalendarEventPopover } = useUIStore()
   const { tasks: tasksRecord } = useTasksStore() // aliased to avoid collision with tasks prop
   const { isEventCompleted } = useCalendarStore()
   const { completeEvent, uncompleteEvent } = useCompleteEvent()
@@ -89,7 +85,7 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
                     </span>
                   )}
                   <button
-                    onClick={e => { e.stopPropagation(); setPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
+                    onClick={e => { e.stopPropagation(); setCalendarEventPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
                     className={`truncate text-left flex-1 ${isCompleted ? 'line-through' : ''}`}
                     style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                   >
@@ -144,8 +140,12 @@ export default function DayView({ currentDate, tasks, events, calendars }: Props
           </div>
         )}
       </div>
-      {popover && (
-        <EventPopover event={popover.event} anchorRect={popover.rect} onClose={() => setPopover(null)} />
+      {calendarEventPopover && (
+        <EventPopover
+          event={calendarEventPopover.event}
+          anchorRect={calendarEventPopover.rect}
+          onClose={() => setCalendarEventPopover(null)}
+        />
       )}
     </div>
   )

@@ -19,13 +19,10 @@ interface Props {
   isToday: boolean
 }
 
-type PopoverState = { event: ExtendedCalendarEvent; rect: DOMRect } | null
-
 export default function DayCell({ day, tasks, events, calendars, isCurrentMonth, isToday }: Props) {
-  const [popover, setPopover] = useState<PopoverState>(null)
   const [showAll, setShowAll] = useState(false)
   const { completeTask, uncompleteTask } = useCompleteTask()
-  const { openTaskEditor, setEditorInitialTask } = useUIStore()
+  const { openTaskEditor, setEditorInitialTask, calendarEventPopover, setCalendarEventPopover } = useUIStore()
   const { tasks: tasksRecord } = useTasksStore() // aliased to avoid collision with tasks prop
   const { isEventCompleted } = useCalendarStore()
   const { completeEvent, uncompleteEvent } = useCompleteEvent()
@@ -96,7 +93,7 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
                   )}
                 </button>
                 <button
-                  onClick={e => { e.stopPropagation(); setPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
+                  onClick={e => { e.stopPropagation(); setCalendarEventPopover({ event, rect: e.currentTarget.getBoundingClientRect() }) }}
                   className="flex-1 text-left px-1 py-0.5 truncate font-medium"
                   style={{ color: isCompleted ? '#94a3b8' : 'white' }}
                 >
@@ -143,9 +140,13 @@ export default function DayCell({ day, tasks, events, calendars, isCurrentMonth,
         )}
       </div>
 
-      {/* Event popover */}
-      {popover && (
-        <EventPopover event={popover.event} anchorRect={popover.rect} onClose={() => setPopover(null)} />
+      {/* Event popover — only render if the globally selected event belongs to this cell */}
+      {calendarEventPopover && events.some(e => e.id === calendarEventPopover.event.id) && (
+        <EventPopover
+          event={calendarEventPopover.event}
+          anchorRect={calendarEventPopover.rect}
+          onClose={() => setCalendarEventPopover(null)}
+        />
       )}
     </div>
   )

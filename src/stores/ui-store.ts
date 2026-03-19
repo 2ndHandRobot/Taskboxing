@@ -1,6 +1,9 @@
 import { create } from 'zustand'
+import type { ExtendedCalendarEvent, ExtendedTask } from '../types/task.types'
 
 export type ActiveView = 'list' | 'calendar' | 'timeline' | 'dashboard'
+
+export type CalendarEventPopover = { event: ExtendedCalendarEvent; rect: DOMRect }
 
 interface UIStore {
   // Navigation
@@ -18,12 +21,16 @@ interface UIStore {
   taskSort: 'due' | 'priority' | 'manual'
 
   // Task editor — when opening modal with pre-populated data from inline editor
-  editorInitialTask: Partial<import('../types/task.types').ExtendedTask> | null
+  editorInitialTask: Partial<ExtendedTask> | null
   editorIsNew: boolean   // true = creating a new task
 
   // Settings panel
   showSettings: boolean
   toggleSettings: () => void
+
+  // Calendar event popover (global — only one open at a time)
+  calendarEventPopover: CalendarEventPopover | null
+  setCalendarEventPopover: (popover: CalendarEventPopover | null) => void
 
   // Actions
   setActiveView: (view: ActiveView) => void
@@ -35,7 +42,7 @@ interface UIStore {
   setActiveTaskListFilter: (id: string | null) => void
   setTaskFilter: (filter: 'all' | 'active' | 'completed') => void
   setTaskSort: (sort: 'due' | 'priority' | 'manual') => void
-  setEditorInitialTask: (task: Partial<import('../types/task.types').ExtendedTask> | null, isNew?: boolean) => void
+  setEditorInitialTask: (task: Partial<ExtendedTask> | null, isNew?: boolean) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -50,6 +57,7 @@ export const useUIStore = create<UIStore>((set) => ({
   editorInitialTask: null,
   editorIsNew: false,
   showSettings: false,
+  calendarEventPopover: null,
 
   setActiveView: (view) => set({ activeView: view }),
 
@@ -62,6 +70,7 @@ export const useUIStore = create<UIStore>((set) => ({
       isTaskEditorOpen: true,
       selectedTaskId: taskId ?? null,
       editorIsNew: !taskId,
+      calendarEventPopover: null,  // close any open event popover
     }),
 
   closeTaskEditor: () => set({ isTaskEditorOpen: false, editorInitialTask: null, editorIsNew: false }),
@@ -76,5 +85,7 @@ export const useUIStore = create<UIStore>((set) => ({
 
   setEditorInitialTask: (task, isNew = false) => set({ editorInitialTask: task, editorIsNew: isNew }),
 
-  toggleSettings: () => set((s) => ({ showSettings: !s.showSettings })),
+  toggleSettings: () => set((s) => ({ showSettings: !s.showSettings, calendarEventPopover: null })),
+
+  setCalendarEventPopover: (popover) => set({ calendarEventPopover: popover }),
 }))
