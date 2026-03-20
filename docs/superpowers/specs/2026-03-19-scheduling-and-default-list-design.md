@@ -5,6 +5,18 @@
 
 ---
 
+## Future: Native Google Tasks Scheduling
+
+As of 2026-03-20, Google Tasks has introduced start and finish times in its UI, but these fields are **not yet exposed in the Google Tasks API**. Once they are:
+
+- Replace the calendar-event creation approach with direct task updates using the native time fields.
+- Remove `metadata.calendarEventId` and `metadata.calendarId` from the task metadata schema.
+- Retain the option to create a corresponding Google Calendar event when the user explicitly wants it — for example, to set reminders or share the event with others.
+
+Until the API exposes these fields, the calendar-event approach documented below remains the intended implementation.
+
+---
+
 ## Overview
 
 Two UX improvements to the task creation flow:
