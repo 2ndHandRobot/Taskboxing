@@ -1,73 +1,68 @@
-# React + TypeScript + Vite
+# Taskboxing
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Smart task scheduling and completion tracking for Google Tasks & Calendar, delivered as a Chrome extension.
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [Node.js](https://nodejs.org/) 18 or later
+- A Google account
+- A Google Cloud project with the OAuth consent screen configured and the following APIs enabled:
+  - Google Tasks API
+  - Google Calendar API
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Create OAuth credentials
 
-## Expanding the ESLint configuration
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and open (or create) a project.
+2. Navigate to **APIs & Services → Credentials**.
+3. Click **Create Credentials → OAuth client ID**.
+4. Choose **Chrome Extension** as the application type.
+5. Copy the generated **Client ID**.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 2. Configure environment
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Create a `.env` file in the project root:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+OAUTH_CLIENT_ID=your-client-id-here.apps.googleusercontent.com
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Install dependencies and build
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm install
+npm run build
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The built extension will be output to the `dist/` folder.
+
+### 4. Load the extension in Chrome
+
+1. Open Chrome and go to `chrome://extensions`.
+2. Enable **Developer mode** (toggle in the top-right corner).
+3. Click **Load unpacked**.
+4. Select the `dist/` folder inside this project.
+
+The Taskboxing icon will appear in your toolbar. Click it or open the side panel to get started.
+
+## Development
+
+```bash
+npm run dev
+```
+
+This starts the Vite dev server with HMR. The crxjs plugin hot-reloads the extension in Chrome — load the `dist/` folder as an unpacked extension once, and changes will reflect automatically.
+
+## Project structure
+
+```
+src/
+  background/      # Service worker (alarms, auth token refresh)
+  components/      # React UI components
+  popup/           # Extension toolbar popup
+  sidepanel/       # Main side panel UI
+  services/        # Google Tasks & Calendar API clients
+  stores/          # Zustand state
+manifest.template.json  # Manifest source — OAuth client ID injected at build time
 ```
