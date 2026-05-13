@@ -98,24 +98,26 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
     existingTask?.metadata.dependencies ?? []
   )
 
-  // For new tasks: which list to create in (user-selectable)
+  // Which list the task belongs to / will be created in
   const validListIds = new Set(taskLists.map(l => l.id))
-  const defaultListId =
-    existingTask?.taskListId
-    ?? (activeTaskListFilter && validListIds.has(activeTaskListFilter)
+  const defaultListId = existingTask
+    ? (existingTask.taskListId ?? '')
+    : (
+      (activeTaskListFilter && validListIds.has(activeTaskListFilter)
         ? activeTaskListFilter : undefined)
-    ?? (settings.defaultTaskListId && validListIds.has(settings.defaultTaskListId)
+      ?? (settings.defaultTaskListId && validListIds.has(settings.defaultTaskListId)
         ? settings.defaultTaskListId : undefined)
-    ?? taskLists[0]?.id
-    ?? ''
+      ?? taskLists[0]?.id
+      ?? ''
+    )
   const [selectedListId, setSelectedListId] = useState(defaultListId)
 
-  // If lists weren't loaded when modal opened, update selectedListId once they arrive
+  // If lists weren't loaded when new-task modal opened, pick first list once they arrive
   useEffect(() => {
-    if (!selectedListId && taskLists.length > 0) {
+    if (!selectedListId && !existingTask && taskLists.length > 0) {
       setSelectedListId(taskLists[0].id)
     }
-  }, [taskLists, selectedListId])
+  }, [taskLists, selectedListId, existingTask])
 
   const estimatedMinutes = (parseInt(estimatedHours || '0') * 60) + parseInt(estimatedMins || '0')
   const hasEstimate = estimatedMinutes > 0
@@ -140,10 +142,16 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
           due: due ? new Date(due).toISOString() : undefined,
           metadata: { ...existingTask.metadata, ...metaPatch },
         }
-        await updateTask(updated)
-        // edit mode: task prop is the real ExtendedTask, no override needed
-        if (showScheduleForm && scheduleFormRef.current) {
-          await scheduleFormRef.current.submit()
+        const listChanged = selectedListId && selectedListId !== existingTask.taskListId
+        if (listChanged) {
+          const dueIso = due ? new Date(due).toISOString() : undefined
+          await createTask(selectedListId, updated.title, updated.userNotes, metaPatch, dueIso)
+          await deleteTask(existingTask.taskListId, existingTask.id)
+        } else {
+          await updateTask(updated)
+          if (showScheduleForm && scheduleFormRef.current) {
+            await scheduleFormRef.current.submit()
+          }
         }
       } else {
         const dueIso = due ? new Date(due).toISOString() : undefined
@@ -213,25 +221,26 @@ export default function TaskEditorForm({ taskId, initialData, onClose }: Props) 
           className="w-full text-sm font-medium border-0 border-b border-slate-200 pb-1 focus:outline-none focus:border-blue-400 bg-transparent"
         />
 
-        {/* Task list selector — only for new tasks */}
-        {!existingTask && (
-          <div>
-            <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">List</label>
-            {taskLists.length === 0 ? (
-              <span className="text-xs text-slate-400 italic">Loading lists…</span>
-            ) : (
-              <select
-                value={selectedListId}
-                onChange={e => setSelectedListId(e.target.value)}
-                className="w-full text-sm border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
-              >
-                {taskLists.map(list => (
-                  <option key={list.id} value={list.id}>{list.title}</option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
+        {/* Task list selector */}
+        <div>
+          <label className="block text-xs text-slate-400 uppercase tracking-wide mb-1">List</label>
+          {taskLists.length === 0 ? (
+            <span className="text-xs text-slate-400 italic">Loading lists…</span>
+          ) : (
+            <select
+              value={selectedListId}
+              onChange={e => setSelectedListId(e.target.value)}
+              className="w-full text-sm border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              {!selectedListId && (
+                <option value="" disabled>(none)</option>
+              )}
+              {taskLists.map(list => (
+                <option key={list.id} value={list.id}>{list.title}</option>
+              ))}
+            </select>
+          )}
+        </div>
 
         {/* Notes */}
         <textarea
